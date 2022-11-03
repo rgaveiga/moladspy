@@ -13,7 +13,7 @@ class Slab:
     @dispatch(str)
     def __init__(self,slabname):
         '''
-        __init__(slabname,filename,filetype) -> class constructor.
+        __init__(slabname) -> class constructor.
 
         Parameters
         ----------
@@ -46,7 +46,7 @@ class Slab:
         slabname : string
             A label allowing you to identify the slab, for instance, "graphene".
         filename : string
-            Name of an XYZ file containing the slab structure.
+            Name of the file containing the slab structure.
         filetype : string
             Type of the file containing the slab structure. For now, only 'XYZ' 
             is accepted.

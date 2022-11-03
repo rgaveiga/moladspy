@@ -45,7 +45,7 @@ class Molecule:
             A label allowing you to identify the type of the molecule, for 
             instance, "benzene" or "C6H12".
         filename : string
-            Name of an XYZ file containing the molecule structure.
+            Name of the file containing the molecule structure.
         filetype : string
             Type of the file containing the molecule structure. For now, only 
             'XYZ' is accepted.
