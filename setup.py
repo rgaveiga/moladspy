@@ -5,7 +5,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__),fname)).read()
 
 setup(name='MolAdsPy',
-      version='0.1',
+      version='0.1.1',
       description="Manipulation of molecules adsorbed on a substrate.",
       long_description_content_type='text/markdown',
       long_description=read('Desc.MD'),
