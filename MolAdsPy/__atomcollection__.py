@@ -1,7 +1,7 @@
 from MolAdsPy.__atom__ import Atom,Species
 from MolAdsPy.__exception__ import BasicException
 from multipledispatch import dispatch
-from numpy import array,ndarray,dot
+from numpy import array,ndarray,dot,sqrt
 from copy import copy
 from abc import ABC,abstractmethod
 import os.path
@@ -305,7 +305,17 @@ class AtomCollection(ABC):
             file given as the corresponding value. The default is {}.
         pwargs : Python dictionary.
             Dictionary containing key-value pairs that allow some customization 
-            of the input file. At the moment, those are the keys accepted:
+            of the input file. For additional information, check out 'pw.x' 
+            documentation. These are currently the accepted keys:
+                calculation : string, optional
+                    Type of calculation to be carried out. It must be either 
+                    'relax' or 'vc-relax'. The default is 'relax'.
+                ibrav : integer, optional
+                    Bravais lattice. The default is 0.
+                celldm(2)-celldm(6) : float, optional (depending on 'ibrav')
+                    Crystallographic constants that can be provided depending on 
+                    'ibrav' value. 'celldm(1)', the lattice parameter, is calculated 
+                    from the 'a0' property of the atom collection object.
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
@@ -343,6 +353,7 @@ class AtomCollection(ABC):
         if not (isinstance(file_name,str) and len(file_name)>0):
            raise AtomCollectionError("'file_name' must be a non-empty string!")
            
+        ang2bohr=1.8897259886
         natoms=0
         inpstr=""
         atompos=""
@@ -368,15 +379,78 @@ class AtomCollection(ABC):
             raise AtomCollectionError("There is no active atom! Nothing to do!")
         
         inpstr="&CONTROL\n"
-        inpstr+="    calculation='relax',\n"
+        
+        if "calculation" in pwargs:            
+            if pwargs["calculation"] in ("relax","vc-relax"):
+                calculation=pwargs["calculation"]                
+                inpstr+="    calculation='%s',\n" % pwargs["calculation"]
+            else:
+                raise AtomCollectionError("Only 'relax' and 'vc-relax' calculations are allowed!")
+        else:
+            calculation="relax"
+            inpstr+="    calculation='relax',\n"
+            
         inpstr+="    restart_mode='from_scratch',\n"
         inpstr+="    pseudo_dir='.',\n"
         inpstr+="    prefix='%s',\n" % (os.path.splitext
                                         (os.path.basename(file_name))[0])
         inpstr+="    nstep=500,\n/\n"
         inpstr+="&SYSTEM\n"
-        inpstr+="    ibrav=0,\n"
-        inpstr+="    celldm(1)=%.10f,\n" % (self._a0*1.8897259886)
+        
+        if "ibrav" in pwargs and pwargs["ibrav"]!=0:
+            ibrav=int(pwargs["ibrav"])
+            inpstr+="    ibrav=%d,\n" % int(pwargs["ibrav"])
+            latpar=self._a0*sqrt(self._latvec[0].dot(self._latvec[0]))*n*ang2bohr
+            inpstr+="    celldm(1)=%.10f,\n" % latpar
+            
+            if pwargs["ibrav"] in (4,6,7):
+                if "celldm(3)" in pwargs:
+                    inpstr+="    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                else:
+                    raise AtomCollectionError("'celldm(3)' must be provided!")
+            elif pwargs["ibrav"] in (-5,5):
+                if "celldm(4)" in pwargs:
+                    inpstr+="    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
+                else:
+                    raise AtomCollectionError("'celldm(4)' must be provided!")
+            elif pwargs["ibrav"] in (-9,8,9,10,11,91):
+                if all(key in pwargs["ibrav"] for key in 
+                       ("celldm(2)","celldm(3)")):
+                    inpstr+="    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
+                    inpstr+="    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                else:
+                    raise AtomCollectionError("'celldm(2)' and 'celldm(3)' must be provided!")
+            elif pwargs["ibrav"] in (12,13):
+                if all(key in pwargs["ibrav"] for key in 
+                       ("celldm(2)","celldm(3)","celldm(4)")):
+                    inpstr+="    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
+                    inpstr+="    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                    inpstr+="    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
+                else:
+                    raise AtomCollectionError("'celldm(2)', 'celldm(3)' and 'celldm(4)' must be provided!")
+            elif pwargs["ibrav"] in (-13,-12):
+                if all(key in pwargs["ibrav"] for key in 
+                       ("celldm(2)","celldm(3)","celldm(5)")):
+                    inpstr+="    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
+                    inpstr+="    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                    inpstr+="    celldm(5)=%.10f,\n" % pwargs["celldm(5)"]
+                else:
+                    raise AtomCollectionError("'celldm(2)', 'celldm(3)' and 'celldm(5)' must be provided!")
+            elif pwargs["ibrav"]==14:
+                if all(key in pwargs["ibrav"] for key in 
+                       ("celldm(2)","celldm(3)","celldm(4)","celldm(5)","celldm(6)")):
+                    inpstr+="    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
+                    inpstr+="    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                    inpstr+="    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
+                    inpstr+="    celldm(5)=%.10f,\n" % pwargs["celldm(5)"]
+                    inpstr+="    celldm(6)=%.10f,\n" % pwargs["celldm(6)"]
+                else:
+                    raise AtomCollectionError("'celldm(2)', 'celldm(3)', 'celldm(4)', 'celldm(5)' and 'celldm(6)' must be provided!")
+        else:
+            ibrav=0
+            inpstr+="    ibrav=0,\n"
+            inpstr+="    celldm(1)=%.10f,\n" % (self._a0*ang2bohr)
+            
         inpstr+="    nat=%d,\n" % natoms
         inpstr+="    ntyp=%d,\n" % (len(self._species))
         
@@ -440,16 +514,21 @@ class AtomCollection(ABC):
         
         inpstr+="    electron_maxstep=200,\n/\n"
         inpstr+="&IONS\n/\n"
-        inpstr+="CELL_PARAMETERS alat\n"
-        inpstr+="%.4f   %.4f   %4f\n" % (n*self._latvec[0][0],
-                                         n*self._latvec[0][1],
-                                         n*self._latvec[0][2])
-        inpstr+="%.4f   %.4f   %4f\n" % (m*self._latvec[1][0],
-                                         m*self._latvec[1][1],
-                                         m*self._latvec[1][2])
-        inpstr+="%.4f   %.4f   %4f\n" % (l*self._latvec[2][0],
-                                         l*self._latvec[2][1],
-                                         l*self._latvec[2][2])
+        
+        if calculation=="vc-relax":
+            inpstr+="&CELL\n/\n"
+        
+        if ibrav==0:
+            inpstr+="CELL_PARAMETERS alat\n"
+            inpstr+="%.4f   %.4f   %4f\n" % (n*self._latvec[0][0],
+                                             n*self._latvec[0][1],
+                                             n*self._latvec[0][2])
+            inpstr+="%.4f   %.4f   %4f\n" % (m*self._latvec[1][0],
+                                             m*self._latvec[1][1],
+                                             m*self._latvec[1][2])
+            inpstr+="%.4f   %.4f   %4f\n" % (l*self._latvec[2][0],
+                                             l*self._latvec[2][1],
+                                             l*self._latvec[2][2])
 
         inpstr+="K_POINTS automatic\n"
 
