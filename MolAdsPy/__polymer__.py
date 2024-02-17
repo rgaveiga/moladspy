@@ -20,10 +20,10 @@ class Polymer(AtomCollection):
         Parameters
         ----------
         label : string
-            A label allowing you to identify the type of molecule, for instance, 
-            "benzene" or "C6H12".
+            A label allowing you to identify the type of polymer, for instance, 
+            "Polyethylene" or "(C2H4)n".
         vaccuum : float, optional
-            Vaccuum separating the molecule from its images in a periodic 
+            Vaccuum separating the polymer from its images in a periodic 
             boundary conditions scheme. The default is 10.0 Angstroms.
             
         '''
@@ -32,12 +32,12 @@ class Polymer(AtomCollection):
         if len(label)>0:
             self._label=label
         else:
-            raise MoleculeError("'label' must be a non-empty string!")
+            raise PolymerError("'label' must be a non-empty string!")
             
         if vaccuum>0.0:
             self._vaccuum=vaccuum
         else:
-            raise MoleculeError("'vaccuum' must be a number greater than zero!")
+            raise PolymerError("'vaccuum' must be a number greater than zero!")
                     
         self._maxx=self._maxy=self._maxz=None       # Maximum Cartesian coordinates
         self._minx=self._miny=self._minz=None       # Minimum Cartesian coordinates
@@ -51,15 +51,15 @@ class Polymer(AtomCollection):
         Parameters
         ----------
         label : string
-            A label allowing you to identify the type of molecule, for instance, 
+            A label allowing you to identify the type of polymer, for instance, 
             "benzene" or "C6H12".
         file_name : string
-            Name of the file containing the molecule structure.
+            Name of the file containing the polymer structure.
         file_type : string
-            Type of file containing the molecule coordinates. The default is 
+            Type of file containing the polymer coordinates. The default is 
             "XYZ", which is the only type currently supported.
         vaccuum : float, optional
-            Vaccuum separating the molecule from its images in a periodic 
+            Vaccuum separating the polymer from its images in a periodic 
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         '''
@@ -68,22 +68,22 @@ class Polymer(AtomCollection):
         if len(label)>0:
             self._label=label
         else:
-            raise MoleculeError("'label' must be a non-empty string!")
+            raise PolymerError("'label' must be a non-empty string!")
             
         self._anchors={"com":array([0.0,0.0,0.0])}   # Anchor points for translations and rotations
             
         if vaccuum>0.0:
             self._vaccuum=vaccuum
         else:
-            raise MoleculeError("'vaccuum' must be a number greater than zero!")
+            raise PolymerError("'vaccuum' must be a number greater than zero!")
 
         if len(file_name)>0:       
             if file_type.lower()=='xyz':
                 self._read_xyz(file_name)
             else:
-                raise MoleculeError("'file_type' must be 'XYZ'!")
+                raise PolymerError("'file_type' must be 'XYZ'!")
         else:
-            raise MoleculeError("'file_name' must be a valid file name!")
+            raise PolymerError("'file_name' must be a valid file name!")
         
     @dispatch(str,list,vaccuum=(int,float))    
     def __init__(self,label,atom_list,vaccuum=10.0):
@@ -93,12 +93,12 @@ class Polymer(AtomCollection):
         Parameters
         ----------
         label : string
-            A label allowing you to identify the type of molecule, for instance, 
+            A label allowing you to identify the type of polymer, for instance, 
             "benzene" or "C6H12".
         atom_list : Python list
-            List of Atom objects or atom IDs to be added to the molecule.
+            List of Atom objects or atom IDs to be added to the polymer.
         vaccuum : float, optional
-            Vaccuum separating the molecule from its images in a periodic 
+            Vaccuum separating the polymer from its images in a periodic 
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         '''
@@ -107,7 +107,7 @@ class Polymer(AtomCollection):
         if len(label)>0:
             self._label=label
         else:
-            raise MoleculeError("'label' must be a non-empty string!")
+            raise PolymerError("'label' must be a non-empty string!")
             
         self._anchors={"com":array([0.0,0.0,0.0])}   # Anchor points for translations and rotations
         self._origin=None
@@ -115,7 +115,7 @@ class Polymer(AtomCollection):
         if vaccuum>0.0:
             self._vaccuum=vaccuum
         else:
-            raise MoleculeError("'vaccuum' must be a number greater than zero!")        
+            raise PolymerError("'vaccuum' must be a number greater than zero!")        
                         
         if len(atom_list)>0:
             for atom in atom_list:
@@ -124,19 +124,19 @@ class Polymer(AtomCollection):
                 else:
                     print("WARNING! An element in the atom list must be either an Atom object or an atom ID!")
         else:
-            raise MoleculeError("'atom_list' must be a non-empyt list!")
+            raise PolymerError("'atom_list' must be a non-empyt list!")
             
         self._update()
 
     def add_anchor(self,anchor,pos):
         '''
         add_anchor(anchor,pos) -> adds a new anchor point that can be used as 
-            the reference point of the molecule for translations and rotations.
+            the reference point of the polymer for translations and rotations.
 
         Parameters
         ----------
         anchor : string
-            Name of the anchor point to be added to the molecule.
+            Name of the anchor point to be added to the polymer.
         pos : Numpy array
             Cartesian coordinates of the anchor point. It can also be provided 
             as a Python list or tuple.
@@ -149,9 +149,9 @@ class Polymer(AtomCollection):
             if isinstance(pos,ndarray) and pos.shape[0]==3:
                 self._anchors[anchor]=pos.astype(float)
             else:
-                raise MoleculeError("'pos' must be an array with three components!")
+                raise PolymerError("'pos' must be an array with three components!")
         else:
-            raise MoleculeError("'anchor' must be a non-empty string!")
+            raise PolymerError("'anchor' must be a non-empty string!")
             
     def remove_anchor(self,anchor):
         '''
@@ -160,7 +160,7 @@ class Polymer(AtomCollection):
         Parameters
         ----------
         anchor : string
-            Name of the anchor point to be removed from the molecule.
+            Name of the anchor point to be removed from the polymer.
 
         '''
         if isinstance(anchor,str) and anchor in self._anchors.keys():
@@ -171,27 +171,27 @@ class Polymer(AtomCollection):
         else:
             raise MoleculeError("'anchor' is not a valid anchor point!")
         
-    def write_xyz(self,file_name="molecule.xyz"):
+    def write_xyz(self,file_name="polymer.xyz"):
         '''
-       Saves the atomic coordinates of the molecule into an XYZ file.
+       Saves the atomic coordinates of the polymer into an XYZ file.
 
         Parameters
         ----------
         file_name : string, optional
-            Name of the XYZ file. The default is "molecule.xyz".
+            Name of the XYZ file. The default is "polymer.xyz".
 
         '''
         super().write_xyz(file_name,ucell=True)          
                 
-    def write_pw_input(self,file_name="molecule.in",pseudopotentials={},pwargs={}):
+    def write_pw_input(self,file_name="polymer.in",pseudopotentials={},pwargs={}):
         '''
-        Creates a basic input file for geometry relaxation of the molecule using 
+        Creates a basic input file for geometry relaxation of the polymer using 
         the pw.x code found in the Quantum Espresso package.
 
         Parameters
         ----------
         file_name : string, optional
-            Name of the input file. The default is "molecule.in".        
+            Name of the input file. The default is "polymer.in".        
         pseudopotentials : Python dictionary, optional
             Specify for each element provided as a key the name of a pseudopotential 
             file given as the corresponding value. The default is {}.        
@@ -250,7 +250,7 @@ class Polymer(AtomCollection):
         
     def displace(self,disp):
         '''
-        displace(disp) -> rigidly displaces the molecule.
+        displace(disp) -> rigidly displaces the polymer.
 
         Parameters
         ----------
@@ -265,35 +265,35 @@ class Polymer(AtomCollection):
             
     def move_to(self,x,anchor="com"):
         '''
-        move_to(x,anchor) -> rigidly moves the molecule such that the anchor 
+        move_to(x,anchor) -> rigidly moves the polymer such that the anchor 
         point is located at 'x'.
 
         Parameters
         ----------
         x : Numpy array
-            New position of the molecule's anchor point. It can also be provided 
+            New position of the polymer's anchor point. It can also be provided 
             as a Python list or tuple.
         anchor : string, optional
             Anchor point used as reference for translations. The default is 
-            'com', which means the molecule's center of mass.
+            'com', which means the polymer's center of mass.
 
         '''
         if isinstance(x,(list,tuple)):
             x=array(x)
         
         if not (isinstance(anchor,str) and anchor in self._anchors.keys()):
-            raise MoleculeError("'anchor' is not a valid anchor point!")
+            raise PolymerError("'anchor' is not a valid anchor point!")
         
         if isinstance(x,ndarray) and x.shape[0]==3:
             disp=x.astype(float)-self._anchors[anchor]
             
             self.displace(disp)
         else:
-            raise MoleculeError("'x' must be an array with three components!")
+            raise PolymerError("'x' must be an array with three components!")
 
     def rotate(self,theta,phi,psi,anchor="com"):
         '''
-        rotate(theta,phi,psi,anchor) -> rotates the molecule around an anchor point.
+        rotate(theta,phi,psi,anchor) -> rotates the polymer around an anchor point.
 
         Parameters
         ----------
@@ -304,8 +304,8 @@ class Polymer(AtomCollection):
         psi : float, optional
             Third rotation angle (around Z axis), in degrees.
         anchor : string, optional
-            Anchor point around which the molecule will be rotated. The default 
-            is 'com', which means the molecule's center of mass.
+            Anchor point around which the polymer will be rotated. The default 
+            is 'com', which means the polymer's center of mass.
 
         '''
         if isinstance(theta,(float,int)) and \
@@ -315,10 +315,10 @@ class Polymer(AtomCollection):
             phi=radians(phi)
             psi=radians(psi)
         else:
-            raise MoleculeError("Rotation angles must be provided as numbers!")
+            raise PolymerError("Rotation angles must be provided as numbers!")
             
         if not (isinstance(anchor,str) and anchor in self._anchors.keys()):
-            raise MoleculeError("'anchor' is not a valid anchor point!")
+            raise PolymerError("'anchor' is not a valid anchor point!")
             
         a11=cos(theta)*cos(psi)
         a12=-cos(phi)*sin(psi)+sin(phi)*sin(theta)*cos(psi)
@@ -344,16 +344,43 @@ class Polymer(AtomCollection):
         
         self._update()
     
+    def align(self, axis):
+        """
+        Aligns the polymer along the specified axis.
+
+        Parameters
+        ----------
+        axis : str
+            The axis along which to align the polymer ('x', 'y', or 'z').
+        """
+        # Dictionary to map the axis of the rotatino angles (theta, phi, psi)
+        # This values are examples and must be adjusted by necessity
+        # Theta: Axis Y Rotation
+        # Phi: Axis X Rotation
+        # Psi: Axis Z Rotation
+        rotation_map = {
+            'x': (0, 0, 90),
+            'y': (90, 0, 0),
+            'z': (0, 90, 0)
+        }
+
+        if axis in rotation_map:
+            theta, phi, psi = rotation_map[axis]
+            self.rotate(theta, phi, psi, anchor="com")
+        else:
+            raise PolymerError(f"Invalid axis '{axis}'. Please choose 'x', 'y', or 'z'.")
+
+
     def resize(self):
         '''
-        Does nothing, because this method is not implemented for Molecule objects.
+        Does nothing, because this method is not implemented for Polymer objects.
         
         '''
-        raise MoleculeError("Method not available for Molecule objects!")
+        raise PolymerError("Method not available for Polymer objects!")
                        
     def _update(self):
         '''
-        _update() -> simultaneously updates the molecule's center of mass and 
+        _update() -> simultaneously updates the polymer's center of mass and 
         the values of its extremities.
         '''
         valid_coords=array([atom._x for atom in self.active_atoms])
@@ -380,34 +407,34 @@ class Polymer(AtomCollection):
             
     def __str__(self):
         '''
-        __str__() -> returns the type and the ID of the Molecule object.
+        __str__() -> returns the type and the ID of the Polymer object.
 
         Returns
         -------
         String.
-            A string containing the type and ID of the Molecule object.
+            A string containing the type and ID of the Polymer object.
         '''
-        return "<Molecule object> Type: %s; ID: %d" % (self._label,self._id)
+        return "<Polymer object> Type: %s; ID: %d" % (self._label,self._id)
     
     '''
     Properties
     ----------
     a0 : float, readonly
-        Lattice parameter. Meaningless for molecules, it is still necessary  
+        Lattice parameter. Meaningless for polymers, it is still necessary  
         when writing extended XYZ files or PW input files. It is set to 1.
     lattice_vectors : Numpy array, readonly
-        Lattice vectors. Meaningless for molecules, it is still necessary  
+        Lattice vectors. Meaningless for polymers, it is still necessary  
         when writing extended XYZ files or PW input files. The vectors are 
         determined by adding the prescribed length of vaccuum to the extremities 
-        of the molecule.
+        of the polymer.
     anchors : Python dictionary, readonly
         Dictionary of anchor points.
     center_of_mass : Numpy array, readonly
-        Center of mass of the molecule.
+        Center of mass of the polymer.
     maxx,minx,maxy,miny,maxz,minz : floats, readonly
-        Molecule extremities.
+        Polymer extremities.
     origin : Numpy array
-        Position with minimum values of X, Y, and Z coordinates of molecule.
+        Position with minimum values of X, Y, and Z coordinates of polymer.
     '''
     @property
     def a0(self):
