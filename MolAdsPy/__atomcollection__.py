@@ -1,5 +1,5 @@
-from MolAdsPy.__atom__ import Atom,Species
-from MolAdsPy.__exception__ import BasicException
+from __atom__ import Atom,Species
+from __exception__ import BasicException
 from multipledispatch import dispatch
 from numpy import array,ndarray,dot,sqrt
 from copy import copy

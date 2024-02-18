@@ -1,6 +1,6 @@
 from __future__ import print_function
-from MolAdsPy.__atomcollection__ import AtomCollection
-from MolAdsPy.__exception__ import BasicException
+from __atomcollection__ import AtomCollection
+from __exception__ import BasicException
 from abc import ABC,abstractmethod
 from numpy import array
 

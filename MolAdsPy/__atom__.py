@@ -1,4 +1,4 @@
-from MolAdsPy.__exception__ import BasicException
+from __exception__ import BasicException
 from numpy import array,ndarray
 
 class AtomError(BasicException):

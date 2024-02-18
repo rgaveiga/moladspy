@@ -1,8 +1,8 @@
-import MolAdsPy.__atom__ as __atom__
-import MolAdsPy.__molecule__ as __molecule__
-import MolAdsPy.__slab__ as __slab__
-import MolAdsPy.__adsorption__ as __adsorption__
-import MolAdsPy.__polymer__ as __polymer__
+import __atom__ as __atom__
+import __molecule__ as __molecule__
+import __slab__ as __slab__
+import __adsorption__ as __adsorption__
+import __polymer__ as __polymer__
 
 class Atom(__atom__.Atom):
     pass

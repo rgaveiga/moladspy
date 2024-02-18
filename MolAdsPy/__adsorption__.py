@@ -1,8 +1,8 @@
 from __future__ import print_function
-from MolAdsPy.__molecule__ import Molecule
-from MolAdsPy.__slab__ import Slab
-from MolAdsPy.__hybrid__ import Hybrid
-from MolAdsPy.__exception__ import BasicException
+from __molecule__ import Molecule
+from __slab__ import Slab
+from __hybrid__ import Hybrid
+from __exception__ import BasicException
 from numpy import array,dot,max,min,ndarray
 from multipledispatch import dispatch
 

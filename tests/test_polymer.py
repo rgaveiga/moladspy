@@ -1,5 +1,8 @@
-from MolAdsPy import Atom
-from MolAdsPy import Polymer
+import sys
+
+sys.path.append("C:\\Users\\pierr\\OneDrive\\Documents\\GitHub\\moladspy\\MolAdsPy")
+from core import Atom
+from core import Polymer
 from numpy import array
 
 print("1)")
@@ -15,7 +18,7 @@ print("\n2)")
 
 h1=Atom("H",x=[0.5,0.0,0.0])
 h2=h1.copy()
-h2.coords[0]=1.5
+h2.coords[0]=1.5 
 
 h2_mol.add_atom(h1)
 h2_mol.add_atom(h2)
@@ -85,9 +88,9 @@ for key in h2_mol.anchors.keys():
     
 print("\n8)")
 
-tcnq=Molecule("tcnq","tcnq.xyz",vaccuum=20.0)
+tcnq=Polymer("pla","pla1.xyz",vaccuum=20.0)
 
-tcnq.write_xyz("tcnq.1.xyz")
+tcnq.write_xyz("pla1.1.xyz")
 
 print("\n9)")
 
@@ -95,8 +98,8 @@ tcnq2=tcnq.copy()
 
 tcnq2.rotate(-30,-30,-30)
 tcnq.rotate(30,30,30)
-tcnq.write_xyz("tcnq.2.xyz")
-tcnq2.write_xyz("tcnq.3.xyz")
+tcnq.write_xyz("pla1.2.xyz")
+tcnq2.write_xyz("pla1.3.xyz")
 
 print("Max ",tcnq.maxx,tcnq.maxy,tcnq.maxz)
 print("Min ",tcnq.minx,tcnq.miny,tcnq.minz)
