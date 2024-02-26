@@ -29,6 +29,8 @@ class Polymer(AtomCollection):
         '''
         super().__init__()
         
+        self._orientation = 0 # x by standard
+
         if len(label)>0:
             self._label=label
         else:
@@ -65,6 +67,8 @@ class Polymer(AtomCollection):
         '''
         super().__init__()
         
+        
+
         if len(label)>0:
             self._label=label
         else:
@@ -84,6 +88,7 @@ class Polymer(AtomCollection):
                 raise PolymerError("'file_type' must be 'XYZ'!")
         else:
             raise PolymerError("'file_name' must be a valid file name!")
+        
         
     @dispatch(str,list,vaccuum=(int,float))    
     def __init__(self,label,atom_list,vaccuum=10.0):
@@ -165,11 +170,11 @@ class Polymer(AtomCollection):
         '''
         if isinstance(anchor,str) and anchor in self._anchors.keys():
             if anchor=="com":
-                raise MoleculeError("The center of mass cannot be removed!")                
+                raise PolymerError("The center of mass cannot be removed!")                
             else:
                 self._anchors.pop(anchor)
         else:
-            raise MoleculeError("'anchor' is not a valid anchor point!")
+            raise PolymerError("'anchor' is not a valid anchor point!")
         
     def write_xyz(self,file_name="polymer.xyz"):
         '''
@@ -353,36 +358,62 @@ class Polymer(AtomCollection):
         axis : str
             The axis along which to align the polymer ('x', 'y', or 'z').
         """
+        # TODO: Permutate new align, change max and min of old axis by new one
+
         # Dictionary to map the axis of the rotatino angles (theta, phi, psi)
         # This values are examples and must be adjusted by necessity
         # Theta: Axis Y Rotation
         # Phi: Axis X Rotation
         # Psi: Axis Z Rotation
         rotation_map = {
-            'x': (0, 0, 90),
+            'x': (0, 90, 0),
             'y': (90, 0, 0),
-            'z': (0, 90, 0)
+            'z': (0, 0, 90)
         }
 
         if axis in rotation_map:
             theta, phi, psi = rotation_map[axis]
             self.rotate(theta, phi, psi, anchor="com")
+        self._update()
         else:
             raise PolymerError(f"Invalid axis '{axis}'. Please choose 'x', 'y', or 'z'.")
 
-
-    def resize(self):
+    # TODO: Reimplement for new orientation
+    def resize(self,n_axis):
         '''
-        Does nothing, because this method is not implemented for Polymer objects.
+        Resizes the slab in the orientation plane by self._orientation index
+        '''
         
-        '''
-        raise PolymerError("Method not available for Polymer objects!")
+        n, m, l = [0,0,0]
+        if(self._orientation == 0):
+            n = n_axis
+        elif(self._orientation == 1):
+            m = n_axis
+        elif(self._orientation == 2):
+            l = n_axis
+        
+        super().resize(n,m,l)
                        
     def _update(self):
         '''
         _update() -> simultaneously updates the polymer's center of mass and 
         the values of its extremities.
         '''
+        # Obtain polymer orientation from the maximum diff max - min. TODO: Reimplement
+        old_orientation = self._orientation
+        old_max_min = self._max_min
+
+        self._max_min = 0
+        if(self.maxx - self.minx > self._max_min):
+            self._max_min = self.maxx - self.minx
+            self._orientation = 0
+        elif(self.maxy - self.miny > self._max_min):
+            self._max_min = self.maxy - self.miny
+            self._orientation = 1
+        elif(self.maxz - self.minz > self._max_min):
+            self._max_min = self.maxz - self.minz
+            self._orientation = 0
+
         valid_coords=array([atom._x for atom in self.active_atoms])
         atomic_mass=array([atom.atomic_mass for atom in self.active_atoms])
         
@@ -392,10 +423,20 @@ class Polymer(AtomCollection):
             totmass=sum(atomic_mass)
             self._anchors["com"]=sum(atomic_mass*valid_coords.transpose(),
                                      axis=1)/totmass
+            self._anchors["middle_point"]=array([(self.maxx + self.minx)/2.0],(self.maxy + self.miny)/2.0,(self.maxz + self.minz)/2.0)
+
+            # TODO: Calculate only vacuum on perpendicular orientations
+            if(old_orientation != self._orientation):
+                tmpvec = self._latvec[self._orientation]
+                self._latvec[self._orientation] = self._latvec[old_orientation]
+                self._latvec[old_orientation] = tmpvec
+
             self._latvec=array([[self._maxx-self._minx+self._vaccuum,0.0,0.0],
                                 [0.0,self._maxy-self._miny+self._vaccuum,0.0],
                                 [0.0,0.0,self._maxz-self._minz+self._vaccuum]])
+            
             self._origin=array([self._minx,self._miny,self._minz])
+            
         else:
             self._maxx=self._maxy=self._maxz=None
             self._minx=self._miny=self._minz=None

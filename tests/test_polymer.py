@@ -1,127 +1,49 @@
 import sys
 
-sys.path.append("C:\\Users\\pierr\\OneDrive\\Documents\\GitHub\\moladspy\\MolAdsPy")
+# TODO: Make this computer dettached
+path = "E:\\PBC\\GitHub\\moladspy\\MolAdsPy"
+
+sys.path.append(path)
 from core import Atom
 from core import Polymer
 from numpy import array
+import os
 
+# TODO: Make a virtual simple polymer and test align, rotate and resize
+# TODO: Test same tests on PLA
+# TODO: Test same tests on Polypropilene
+# TODO: Make Assert Files on results and Unit Tests
+
+filename = "pla1"
+filepath = os.path.join(path,filename + ".xyz")
+name_polymer = "pla"
 print("1)")
 
-h2_mol=Polymer("h2")
+pol=Polymer("pla",filepath,vaccuum=20.0)
 
-print(h2_mol)
-
-for atom in h2_mol:
-    print("Atom ",atom.ID,atom.coords)
-
-print("\n2)")
-
-h1=Atom("H",x=[0.5,0.0,0.0])
-h2=h1.copy()
-h2.coords[0]=1.5 
-
-h2_mol.add_atom(h1)
-h2_mol.add_atom(h2)
-h2_mol.write_xyz("h2.1.xyz")
-
-for atom in h2_mol:
-    print("Atom ",atom.ID,atom.coords)
-    
-print("Max ",h2_mol.maxx,h2_mol.maxy,h2_mol.maxz)
-print("Min ",h2_mol.minx,h2_mol.miny,h2_mol.minz)
-print("COM ",h2_mol.center_of_mass)
-
-print("\n3)")
-
-h2_mol.rotate(90,0,0)
-h2_mol.write_xyz("h2.2.xyz")
-  
-print("Max ",h2_mol.maxx,h2_mol.maxy,h2_mol.maxz)
-print("Min ",h2_mol.minx,h2_mol.miny,h2_mol.minz)
-print("COM ",h2_mol.center_of_mass)
- 
-print("\n4)")
-
-h2_mol.add_anchor("top1",h2_mol[0].coords)
-h2_mol.add_anchor("top2",h2_mol[1].coords)
-h2_mol.displace([1,1,1])
-h2_mol.write_xyz("h2.3.xyz")
-    
-for key in h2_mol.anchors.keys():
-    print(key,h2_mol.anchors[key])
-    
-print("\n5)")
-
-h2_mol.rotate(0,90,0,"top1")
-h2_mol.write_xyz("h2.4.xyz")
-
-print("Max ",h2_mol.maxx,h2_mol.maxy,h2_mol.maxz)
-print("Min ",h2_mol.minx,h2_mol.miny,h2_mol.minz)
-print("COM ",h2_mol.center_of_mass)
-
-for key in h2_mol.anchors.keys():
-    print(key,h2_mol.anchors[key])
-    
-print("\n6)")
-
-h2_mol.rotate(0,0,90)
-h2_mol.write_xyz("h2.5.xyz")
-
-print("Max ",h2_mol.maxx,h2_mol.maxy,h2_mol.maxz)
-print("Min ",h2_mol.minx,h2_mol.miny,h2_mol.minz)
-print("COM ",h2_mol.center_of_mass)
-
-for key in h2_mol.anchors.keys():
-    print(key,h2_mol.anchors[key])
-    
-print("\n7)")
-
-h2_mol.move_to([2,2,2],"top2")
-h2_mol.write_xyz("h2.6.xyz")
-
-print("Max ",h2_mol.maxx,h2_mol.maxy,h2_mol.maxz)
-print("Min ",h2_mol.minx,h2_mol.miny,h2_mol.minz)
-print("COM ",h2_mol.center_of_mass)
-
-for key in h2_mol.anchors.keys():
-    print(key,h2_mol.anchors[key])
-    
-print("\n8)")
-
-tcnq=Polymer("pla","pla1.xyz",vaccuum=20.0)
-
-tcnq.write_xyz("pla1.1.xyz")
+pol.write_xyz(filename + ".1.xyz")
 
 print("\n9)")
 
-tcnq2=tcnq.copy()
+pol2=pol.copy()
 
-tcnq2.rotate(-30,-30,-30)
-tcnq.rotate(30,30,30)
-tcnq.write_xyz("pla1.2.xyz")
-tcnq2.write_xyz("pla1.3.xyz")
+pol2.rotate(-30,-30,-30)
+pol.rotate(30,30,30)
+pol.write_xyz(filename + ".2.xyz")
+pol2.write_xyz(filename + ".3.xyz")
 
-print("Max ",tcnq.maxx,tcnq.maxy,tcnq.maxz)
-print("Min ",tcnq.minx,tcnq.miny,tcnq.minz)
-print("COM ",tcnq.center_of_mass)
+print("Max ",pol.maxx,pol.maxy,pol.maxz)
+print("Min ",pol.minx,pol.miny,pol.minz)
+print("COM ",pol.center_of_mass)
 
-print("\n10)")
+pol.align('y')
+pol.write_xyz(filename + ".align_y.xyz")
 
-print(tcnq2)
+pol.align('x')
+pol.write_xyz(filename + ".align_x.xyz")
 
-tcnq2.add_anchor("com+disp",tcnq2.anchors["com"]+array([1,1,2]))
-
-for anchor in tcnq2.anchors:
-    print(anchor,tcnq2.anchors[anchor])
-
-tcnq2.rotate(10,-70,90,"com+disp")
-
-tcnq2.write_xyz("tcnq.4.xyz")
-
-for anchor in tcnq2.anchors:
-    print(anchor,tcnq2.anchors[anchor])
-    
-tcnq2.write_pw_input("tcnq.in")
+pol.align('z')
+pol.write_xyz(filename + ".align_z.xyz")
 
 
 
