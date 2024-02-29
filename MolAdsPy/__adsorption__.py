@@ -2,6 +2,7 @@ from __future__ import print_function
 from __molecule__ import Molecule
 from __slab__ import Slab
 from __hybrid__ import Hybrid
+from __polymer__ import Polymer
 from __exception__ import BasicException
 from numpy import array,dot,max,min,ndarray
 from multipledispatch import dispatch
@@ -117,6 +118,67 @@ class Adsorption(Hybrid):
         else:
             raise AdsorptionError("A valid adsorption site must be provided!")
         
+    @dispatch(Polymer,str,n=int,m=int,anchor=str,vertsep=(int,float),side=str)    
+    def add_component(self,molecule,ads_site,n=0,m=0,anchor="com",vertsep=1.0, side="top"):
+        '''
+        Adsorbs a molecule onto the substrate.
+
+        Parameters
+        ----------
+        molecule : Molecule object
+            Adsorbed molecule.
+        ads_site : string
+            Label of the adsorption site.
+        n : integer, optional
+            Number of translations applied to the position of the adsorption site 
+            along the first lattice vector. The default is zero.
+        m : integer, optional
+            Number of translations applied to the position of the adsorption site 
+            along the second lattice vector. The default is zero.
+        anchor : string, optional
+            Anchor point in the molecule that will be vertically aligned with 
+            the adsorption site on the substrate. The default is "com", which 
+            is the positon of the molecule's center of mass.
+        vertsep : float, optional
+            Nearest vertical distance separating the molecule from the 
+            substrate. The default is 1.0 Angstrom.
+        side : string, optional
+            Side of the slab where the molecule will be adsorbed. It must be either 
+            "top" or "bottom" (self-explanatory). The default is "top".
+        '''
+        if molecule._belongs_to is not None:
+            raise AdsorptionError("The molecule already belongs to another structure!")
+        elif self._components["substrate"] is None:
+            raise AdsorptionError("No substrate has been defined!")
+        elif len(anchor)==0 or anchor not in molecule.anchors.keys():
+            raise AdsorptionError("'anchor' must be a valid anchor point!")
+        elif n<0:
+            raise AdsorptionError("'n' must be an integer greater than or equal to zero!")
+        elif m<0:
+            raise AdsorptionError("'m' must be an integer greater than or equal to zero!")
+        
+        if len(ads_site)>0 and ads_site in self._components["substrate"]._ads_sites:
+            sep=max([vertsep,self._minsep])
+            
+            if side=="top":
+                dz=self._components["substrate"]._top+sep-molecule._minz
+            elif side=="bottom":
+                dz=self._components["substrate"]._bottom-sep-molecule._maxz
+            else:
+                raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
+                
+            self._components["molecules@"+side].append(molecule)
+
+            molecule._belongs_to=self
+            x0=self._components["substrate"]._ads_sites[ads_site]+\
+                dot(self._a0*array([n,m]),self._latvec[:2,:2])
+            x=array([x0[0],x0[1],molecule.anchors[anchor][2]+dz])
+            
+            molecule.move_to(x,anchor)            
+            self._update()
+        else:
+            raise AdsorptionError("A valid adsorption site must be provided!")
+                      
     @dispatch(Molecule,(ndarray,list,tuple),anchor=str,vertsep=(int,float),side=str)
     def add_component(self,molecule,pos,anchor="com",vertsep=1.0,side="top"):
         '''
@@ -141,7 +203,7 @@ class Adsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         '''
         if molecule._belongs_to is not None:
-            raise AdsorptionError("The molecule already belongs to another structure!")
+            raise AdsorptionError("The polymer already belongs to another structure!")
         elif self._components["substrate"] is None:
             raise AdsorptionError("No substrate has been defined!")
         elif len(anchor)==0 or anchor not in molecule.anchors.keys():

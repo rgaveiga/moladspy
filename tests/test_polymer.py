@@ -7,6 +7,7 @@ sys.path.append(path)
 from core import Atom
 from core import Polymer
 from numpy import array
+import unittest
 import os
 
 # TODO: Make a virtual simple polymer and test align, rotate and resize
@@ -14,36 +15,53 @@ import os
 # TODO: Test same tests on Polypropilene
 # TODO: Make Assert Files on results and Unit Tests
 
-filename = "pla1"
-filepath = os.path.join(path,filename + ".xyz")
-name_polymer = "pla"
-print("1)")
+class TestPolymerClassMethods(unittest.TestCase):
+    def test_readwrite(self):
+        pass
 
-pol=Polymer("pla",filepath,vaccuum=20.0)
+    def test_rotate(self):
+        pass
 
-pol.write_xyz(filename + ".1.xyz")
+    def test_align(self):
+        filename = "pla1"
+        filepath = os.path.join(path,filename + ".xyz")
+        name_polymer = "pla"
+        print("1)")
 
-print("\n9)")
-
-pol2=pol.copy()
-
-pol2.rotate(-30,-30,-30)
-pol.rotate(30,30,30)
-pol.write_xyz(filename + ".2.xyz")
-pol2.write_xyz(filename + ".3.xyz")
-
-print("Max ",pol.maxx,pol.maxy,pol.maxz)
-print("Min ",pol.minx,pol.miny,pol.minz)
-print("COM ",pol.center_of_mass)
-
-pol.align('y')
-pol.write_xyz(filename + ".align_y.xyz")
-
-pol.align('x')
-pol.write_xyz(filename + ".align_x.xyz")
-
-pol.align('z')
-pol.write_xyz(filename + ".align_z.xyz")
+        pol=Polymer("pla",filepath,vaccuum=20.0)
 
 
+        pol.write_xyz(filename + ".1.xyz")
 
+        print("\n9)")
+
+        pol3=pol.copy()
+        pol2=pol.copy()
+
+        pol2._rotate(-30,-30,-30)
+        pol3._rotate(30,30,30)
+        pol2.write_xyz(filename + ".2.xyz")
+        pol3.write_xyz(filename + ".3.xyz")
+
+        print("Max ",pol.maxx,pol.maxy,pol.maxz)
+        print("Min ",pol.minx,pol.miny,pol.minz)
+        print("COM ",pol.center_of_mass)
+
+        pol_xx = pol.copy()
+        pol_xx.align('x')
+        pol_xx.write_xyz(filename + ".align_xx.xyz")
+
+        pol_xy = pol.copy()
+        pol_xy.align('y')
+        pol_xy.write_xyz(filename + ".align_xy.xyz")
+
+        pol_xz = pol.copy()
+        pol_xz.align('z')
+        pol_xz.write_xyz(filename + ".align_xz.xyz")
+
+    def test_rotate_axis(self):
+        pass
+
+
+if __name__ == '__main__':
+    unittest.main()
