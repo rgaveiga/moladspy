@@ -65,25 +65,23 @@ class TestPolymerClassMethods(unittest.TestCase):
         filepath = os.path.join(path,filename + ".xyz")
         pol=Polymer("pla",filepath,vaccuum=20.0)
         pol1 = pol.copy()
-        #pol1.align('x')
-        #pol1.write_xyz(filename+".align_1.1.xyz")
-        pol1.align('y')
-        print()
-        print("Final orientation: " + str(pol1._orientation))
-        pol1.write_xyz(filename+".align_1.2.xyz")
-        print()
-        print("Final orientation: " + str(pol1._orientation))
-        pol1.align('z')
-        print()
-        print("Final orientation: " + str(pol1._orientation))
-
-        pol1.write_xyz(filename+".align_1.3.xyz")
-        print()
-        print("Final orientation: " + str(pol1._orientation))
+        
         pol1.align('x')
+        self.assertEqual(pol1._orientation,0,msg="Wrong orientation when aligning to x.")
+        pol1.write_xyz(filename+".align_1.1.xyz")
+
+        pol1.align('y')
+        self.assertEqual(pol1._orientation,1,msg="Wrong orientation when aligning to y.")
+        pol1.write_xyz(filename+".align_1.2.xyz")
+
+        pol1.align('z')
+        self.assertEqual(pol1._orientation,2,msg="Wrong orientation when aligning to z.")
+        pol1.write_xyz(filename+".align_1.3.xyz")
+        
+        pol1.align('x')
+        self.assertEqual(pol1._orientation,0,msg="Wrong orientation when aligning to x.")
         pol1.write_xyz(filename+".align_1.4.xyz")
-        print()
-        print("Final orientation: " + str(pol1._orientation))
+
 
 
 if __name__ == '__main__':

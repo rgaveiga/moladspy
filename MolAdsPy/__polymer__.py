@@ -380,21 +380,13 @@ class Polymer(AtomCollection):
             new_orientation = _axis_dic[axis]
         except:
             raise PolymerError(f"Invalid axis '{axis}'. Please choose 'x', 'y', or 'z'.")
-        print()
-        print("extra check orientation: " + str(self._orientation))
+
         # Just align if orientation changes
         if(new_orientation != self._orientation):
             # Hold previous orientation
-            print("Check 1:")
-            print("Old Orientation: " + str(self._orientation ))
-            print("New Orientation: " + str(new_orientation ))
-           
             self._old_orientation = self._orientation
             self._orientation = new_orientation
             
-            print("Check 2:")
-            print("Old Orientation: " + str(self._old_orientation ))
-            print("New Orientation: " + str(self._orientation))
             # Dictionary to map the axis of the rotation angles (theta, phi, psi)
             # This values are examples and must be adjusted by necessity
             # Theta: Axis Y Rotation
@@ -415,27 +407,32 @@ class Polymer(AtomCollection):
 
             '''
             # Identify which angle should be rotate by the sum of the old orientation and the new one
+            # Changes are identified uniquely by the sum of old and new orientations:
+            # x (0) -> y (1) => angle must be in z (2)
+
             choose_angle = {
                 1:2,
                 3:0,
                 2:1
             }
-            print("Check 3:")
-            print("Old Orientation: " + str(self._old_orientation ))
-            print("New Orientation: " + str(self._orientation ))
-            print("Sum orientations: " + str(self._orientation + self._old_orientation))
+            
             right_angle = choose_angle[self._orientation + self._old_orientation]
             rotation_angles = array([0.0,0.0,0.0])
             di = self._orientation - self._old_orientation
-            
-            print("right_angle = " + str(right_angle))
-            print("di = " + str(di))
 
-            # Just trust this works
+            '''
+            # Explaining:
+            Changes are identified uniquely by the sum of old and new orientations:
+                x -> y 
+            Changes: x (0) -> y (1) => angle must be in z (2)
+            Changes: x -> y
+            Changes: x -> y
+            Changes: x -> y
+            '''
             angle_sign = (-1)**abs(di)*di/abs(di)
             rotation_angles[right_angle] = angle_sign*90.0
             phi, theta, psi = rotation_angles
-            print(phi,theta,psi)
+
             self._rotate(theta,phi,psi,anchor="origin")
 
             self._update()
@@ -519,15 +516,6 @@ class Polymer(AtomCollection):
             self._anchors["middle_point"]=array([(self.maxx + self.minx)/2.0,(self.maxy + self.miny)/2.0,(self.maxz + self.minz)/2.0])
             self._anchors["geometric_center"]=sum(valid_coords.transpose(),axis=1)/len(self)
             self._anchors["origin"] = array([0.0,0.0,0.0])
-
-            # TODO: Calculate only vacuum on perpendicular orientations
-            '''
-            if(self._old_orientation != self._orientation):
-                tmpvec = self._latvec[self._orientation]
-                self._latvec[self._orientation] = self._latvec[self._old_orientation]
-                self._latvec[self._old_orientation] = tmpvec
-            '''
-
             
             vaccuum_vec =array([0.0,0.0,0.0]),array([0.0,0.0,0.0]),array([0.0,0.0,0.0])
             # Iterate in every axis
@@ -539,8 +527,6 @@ class Polymer(AtomCollection):
                                 [0.0,self._maxy-self._miny,0.0],
                                 [0.0,0.0,self._maxz-self._minz]])
             self._latvec = self._latvec + vaccuum_vec
-            print("Vaccum Vector")
-            print(vaccuum_vec)
             self._origin=array([self._minx,self._miny,self._minz])
 
 
