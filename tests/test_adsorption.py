@@ -10,19 +10,43 @@ from core import Slab
 from core import Molecule
 from core import Adsorption
 from numpy import array
+import unittest
+import os
 
-print("1)")
+'''
 
-graphene=Slab("graphene","graphene.xyz")
-tcnq=Molecule("tcnq","tcnq.xyz")
+assertEqual(x, y, msg=None)	x == y
+assertNotEqual(x,y,msg=None)	x != y
+assertTrue(x, msg=None)	bool(x) is True
+assertFalse(x, msg=None)	bool(x) is False
+assertIs(x, y , msg=None)	x is y
+assertIsNot(x, y, msg=None)	x is not y
+assertIsNone(x, msg=None)	x is None
+assertIsNotNone(x , msg=None)	x is not None
+assertIn(x, y, msg=None)	x in y
+assertNotIn(x, y, msg=None)	x not in y
+assertIsInstance(x, y, msg=None)	isinstance(x, y)
+assertNotIsInstance(x, y, msg=None)	not isinstance(x, y)
 
-print(graphene)
-print(tcnq)
-print(graphene.label,len(graphene))
-print(tcnq.label,len(tcnq),tcnq.center_of_mass)
+'''
+class TestAdsorptionClass(unittest.TestCase):
+    def test_load(self):
+        graphene=Slab("graphene","graphene.xyz")
+        tcnq=Molecule("tcnq","tcnq.xyz")
 
-print("\n2)")
+        self.assertIsNotNone(graphene,msg='Error loading graphene.xyz')
+        self.assertIsNotNone(tcnq, msg='Error loading tcnq.xyz')
 
+        self.assertEqual(graphene.label,"graphene2",msg="Slab label is not graphene.")
+
+        print(graphene)
+        print(tcnq)
+        print(graphene.label,len(graphene))
+        print(tcnq.label,len(tcnq),tcnq.center_of_mass)
+
+        print("\n2)")
+
+'''
 adsorbed=Adsorption(graphene)
 top1_pos=array([graphene[0].coords[0],graphene[0].coords[1]])
 bridge1_pos=array([0.0,(graphene[1].coords[1]+(graphene[2].coords[1]-
@@ -113,8 +137,10 @@ adsorbed.set_separation(h2_mol,4)
 print(graphene.bottom-h2_mol.maxz)
 
 adsorbed.write_xyz("adsorbed.8.xyz")
+'''
 
-
+if __name__=='__main__':
+     unittest.main()
 
 
 

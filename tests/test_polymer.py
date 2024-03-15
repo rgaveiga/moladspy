@@ -26,6 +26,7 @@ class TestPolymerClassMethods(unittest.TestCase):
         filename = "pla1"
         filepath = os.path.join(path,filename + ".xyz")
         name_polymer = "pla"
+        '''
         print("1)")
 
         pol=Polymer("pla",filepath,vaccuum=20.0)
@@ -58,9 +59,31 @@ class TestPolymerClassMethods(unittest.TestCase):
         pol_xz = pol.copy()
         pol_xz.align('z')
         pol_xz.write_xyz(filename + ".align_xz.xyz")
-
+        '''
     def test_rotate_axis(self):
-        pass
+        filename = "pla1"
+        filepath = os.path.join(path,filename + ".xyz")
+        pol=Polymer("pla",filepath,vaccuum=20.0)
+        pol1 = pol.copy()
+        #pol1.align('x')
+        #pol1.write_xyz(filename+".align_1.1.xyz")
+        pol1.align('y')
+        print()
+        print("Final orientation: " + str(pol1._orientation))
+        pol1.write_xyz(filename+".align_1.2.xyz")
+        print()
+        print("Final orientation: " + str(pol1._orientation))
+        pol1.align('z')
+        print()
+        print("Final orientation: " + str(pol1._orientation))
+
+        pol1.write_xyz(filename+".align_1.3.xyz")
+        print()
+        print("Final orientation: " + str(pol1._orientation))
+        pol1.align('x')
+        pol1.write_xyz(filename+".align_1.4.xyz")
+        print()
+        print("Final orientation: " + str(pol1._orientation))
 
 
 if __name__ == '__main__':

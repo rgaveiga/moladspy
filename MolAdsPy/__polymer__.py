@@ -29,7 +29,9 @@ class Polymer(AtomCollection):
         '''
         super().__init__()
         
-        self._orientation = self._old_orientation = repetition_orientation # x by standard
+        self._orientation = repetition_orientation
+        self._old_orientation = repetition_orientation
+        # x by standard
         self._metric_method = metric_method
         self._dic_metric_method = None
 
@@ -72,8 +74,8 @@ class Polymer(AtomCollection):
         
         self._metric_method = metric_method
         self._dic_metric_method = None
-        self._orientation = self._old_orientation = repetition_orientation # x by standard
-
+        self._orientation = repetition_orientation # x by standard
+        self._old_orientation = repetition_orientation
         if len(label)>0:
             self._label=label
         else:
@@ -115,7 +117,8 @@ class Polymer(AtomCollection):
         super().__init__()
         self._metric_method = metric_method
         self._dic_metric_method = None
-        self._orientation = self._old_orientation = repetition_orientation # x by standard
+        self._orientation = repetition_orientation # x by standard
+        self._old_orientation = repetition_orientation
 
         if len(label)>0:
             self._label=label
@@ -377,13 +380,21 @@ class Polymer(AtomCollection):
             new_orientation = _axis_dic[axis]
         except:
             raise PolymerError(f"Invalid axis '{axis}'. Please choose 'x', 'y', or 'z'.")
-
+        print()
+        print("extra check orientation: " + str(self._orientation))
         # Just align if orientation changes
         if(new_orientation != self._orientation):
             # Hold previous orientation
-            self.old_orientation = self._orientation
+            print("Check 1:")
+            print("Old Orientation: " + str(self._orientation ))
+            print("New Orientation: " + str(new_orientation ))
+           
+            self._old_orientation = self._orientation
             self._orientation = new_orientation
             
+            print("Check 2:")
+            print("Old Orientation: " + str(self._old_orientation ))
+            print("New Orientation: " + str(self._orientation))
             # Dictionary to map the axis of the rotation angles (theta, phi, psi)
             # This values are examples and must be adjusted by necessity
             # Theta: Axis Y Rotation
@@ -409,10 +420,17 @@ class Polymer(AtomCollection):
                 3:0,
                 2:1
             }
+            print("Check 3:")
+            print("Old Orientation: " + str(self._old_orientation ))
+            print("New Orientation: " + str(self._orientation ))
+            print("Sum orientations: " + str(self._orientation + self._old_orientation))
             right_angle = choose_angle[self._orientation + self._old_orientation]
             rotation_angles = array([0.0,0.0,0.0])
             di = self._orientation - self._old_orientation
             
+            print("right_angle = " + str(right_angle))
+            print("di = " + str(di))
+
             # Just trust this works
             angle_sign = (-1)**abs(di)*di/abs(di)
             rotation_angles[right_angle] = angle_sign*90.0
