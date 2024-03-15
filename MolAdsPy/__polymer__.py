@@ -417,8 +417,8 @@ class Polymer(AtomCollection):
             angle_sign = (-1)**abs(di)*di/abs(di)
             rotation_angles[right_angle] = angle_sign*90.0
             phi, theta, psi = rotation_angles
-            
-            self.rotate(theta,phi,psi,"origin")
+            print(phi,theta,psi)
+            self._rotate(theta,phi,psi,anchor="origin")
 
             self._update()
 

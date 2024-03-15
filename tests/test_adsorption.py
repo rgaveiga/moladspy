@@ -6,6 +6,7 @@ path = "E:\\PBC\\GitHub\\moladspy\\MolAdsPy"
 sys.path.append(path)
 from core import Atom
 from core import Polymer
+from core import Slab
 from core import Molecule
 from core import Adsorption
 from numpy import array

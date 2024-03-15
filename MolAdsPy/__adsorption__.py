@@ -233,6 +233,61 @@ class Adsorption(Hybrid):
         else:
             raise AdsorptionError("'pos' must be provided as a list with two components!")
     
+                      
+    @dispatch(Polymer,(ndarray,list,tuple),anchor=str,vertsep=(int,float),side=str)
+    def add_component(self,polymer,pos,anchor="com",vertsep=1.0,side="top"):
+        '''
+        Adsorbs a Polymer molecule onto the substrate.
+
+        Parameters
+        ----------
+        molecule : Molecule object
+            Adsorbed molecule.
+        pos : Numpy array
+            XY coordinates in the substrate above which the molecule will be 
+            placed.
+        anchor : string, optional
+            Anchor point in the molecule that will be vertically aligned with 
+            the adsorption site on the substrate. The default is "com", which 
+            is the positon of the molecule's center of mass.
+        vertsep : float, optional
+            Nearest vertical distance separating the molecule from the 
+            substrate. The default is 1.0 Angstrom.
+        side : string, optional
+            Side of the slab where the molecule will be adsorbed. It must be either 
+            "top" or "bottom" (self-explanatory). The default is "top".
+        '''
+        if polymer._belongs_to is not None:
+            raise AdsorptionError("The polymer already belongs to another structure!")
+        elif self._components["substrate"] is None:
+            raise AdsorptionError("No substrate has been defined!")
+        elif len(anchor)==0 or anchor not in polymer.anchors.keys():
+            raise AdsorptionError("'anchor' must be a valid anchor point!")
+            
+        if isinstance(pos,(list,tuple)):
+            pos=array(pos)
+        
+        if isinstance(pos,ndarray) and pos.shape[0]==2:
+            sep=max([vertsep,self._minsep])
+            
+            if side=="top":
+                dz=self._components["substrate"]._top+sep-polymer._minz
+            elif side=="bottom":
+                dz=self._components["substrate"]._bottom-sep-polymer._maxz
+            else:
+                raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
+            
+            x=array([pos[0],pos[1],polymer.anchors[anchor][2]+dz])
+                        
+            self._components["molecules@"+side].append(polymer)
+            
+            polymer._belongs_to=self
+            
+            polymer.move_to(x,anchor)
+            self._update()
+        else:
+            raise AdsorptionError("'pos' must be provided as a list with two components!")
+    
     @dispatch(Molecule)    
     def remove_component(self,molecule):
         '''
@@ -253,7 +308,28 @@ class Adsorption(Hybrid):
         molecule._belongs_to=None
         
         self._update()
+    
+    @dispatch(Polymer)    
+    def remove_component(self,polymer):
+        '''
+        Removes an adsorbed polymer.
+
+        Parameters
+        ----------
+        molecule : Molecule object
+            Adsorbed molecule to be removed.
+        '''
+        if polymer in self._components["molecules@top"]:
+            self._components["molecules@top"].remove(polymer)
+        elif polymer in self._components["molecules@bottom"]:
+            self._components["molecules@bottom"].remove(polymer)
+        else:
+            raise AdsorptionError("Molecule not found!")
             
+        polymer._belongs_to=None
+        
+        self._update()
+    
     @dispatch(int)
     def remove_component(self,molid):
         '''
@@ -308,7 +384,37 @@ class Adsorption(Hybrid):
         if abs(dz)>0.0:
             molecule.displace(array([0.0,0.0,dz]))
             self._update()
+    
+    @dispatch(Polymer,(int,float))
+    def set_separation(self,polymer,sep):
+        '''
+        Rigidly displaces the polymer along the direction perpendicular to the 
+        substrate, such that the separation between the top/bottom of the substrate 
+        and the nearest atom in the molecule be equal to 'sep'.
+
+        Parameters
+        ----------
+        molecule : Molecule object
+            Adsorbed molecule.
+        sep : float
+            Nearest distance separating the molecule from the substrate.
+        '''
+        if sep<self._minsep:
+            raise AdsorptionError("Polymer will be too close to the substrate!")
+        
+        dz=0.0    
+        
+        if polymer in self._components["molecules@top"]:
+            dz=self._components["substrate"]._top+sep-polymer._minz
+        elif polymer in self._components["molecules@bottom"]:
+            dz=self._components["substrate"]._bottom-sep-polymer._maxz
+        else:
+            raise AdsorptionError("Molecule not found!")
             
+        if abs(dz)>0.0:
+            polymer.displace(array([0.0,0.0,dz]))
+            self._update()
+    
     @dispatch(int,(int,float))
     def set_separation(self,molid,sep):
         '''
