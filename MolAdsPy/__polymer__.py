@@ -32,6 +32,7 @@ class Polymer(AtomCollection):
         self._orientation = repetition_orientation
         self._old_orientation = repetition_orientation
         # x by standard
+
         self._metric_method = metric_method
         self._dic_metric_method = None
 
@@ -115,6 +116,7 @@ class Polymer(AtomCollection):
 
         '''
         super().__init__()
+
         self._metric_method = metric_method
         self._dic_metric_method = None
         self._orientation = repetition_orientation # x by standard
@@ -471,14 +473,15 @@ class Polymer(AtomCollection):
 
         '''
         point = array([0.0,0.0,0.0])
-        
-        if(self._metric_method == None):
-            self._metric_method = {
-                'max_min':lambda: self._anchors["middle_point"],
+
+        if(self._dic_metric_method == None):
+
+            self._dic_metric_method = {
+                'min_max':lambda: self._anchors["middle_point"],
                 'mass_center': lambda: self._anchors["com"],
                 'geometric_center': lambda: self._anchors["geometric_center"]
             }
-        point = self._metric_method[metric_method]()
+        point = self._dic_metric_method[metric_method]()
         
         point[self._orientation] = 0.0
         self._anchors['polymer_axis'] = point
