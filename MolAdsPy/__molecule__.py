@@ -13,7 +13,7 @@ class Molecule(AtomCollection):
     __slots__=["_vaccuum","_maxx","_maxy","_maxz","_minx","_miny","_minz","_anchors"]
     
     @dispatch(str,vaccuum=(int,float))
-    def __init__(self,label,vaccuum=10.0):
+    def __init__(self,label,vaccuum=10.0,**kwargs):
         '''
         Object initialization.
 
@@ -27,7 +27,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
             
         '''
-        super().__init__()
+        super().__init__(**kwargs)
         
         if len(label)>0:
             self._label=label
@@ -122,7 +122,8 @@ class Molecule(AtomCollection):
                 if isinstance(atom,(Atom,int)):
                     self.add_atom(atom,loc=(0,0,0),update=False)
                 else:
-                    print("WARNING! An element in the atom list must be either an Atom object or an atom ID!")
+                    if(self.verbose):
+                        print("WARNING! An element in the atom list must be either an Atom object or an atom ID!")
         else:
             raise MoleculeError("'atom_list' must be a non-empyt list!")
             

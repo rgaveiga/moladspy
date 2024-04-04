@@ -14,8 +14,9 @@ class AtomCollection(ABC):
     _instances=None     # List of atom collection objects created so far
     __slots__=["_ucell","_atoms","_loc","_species","_a0","_latvec","_n","_m","_l",
                "_maxn","_maxm","_maxl","_id","_origin","_belongs_to","_label"]
-    
-    def __init__(self):
+    _verbose = 1        # Level of verbose during usage of the lib
+
+    def __init__(self,**kwargs):
         '''
         Object initialization.
         '''
@@ -33,6 +34,7 @@ class AtomCollection(ABC):
         self._maxn=self._maxm=self._maxl=0      # Maximum number of translations for resizing purposes
         self._origin=array([0.0,0.0,0.0])       # Position with minimum values of X, Y, and Z coordinates of the structure.        
         
+        self._verbose = kwargs.get("verbose",False)
         type(self)._append(self)
         
     @dispatch(int,loc=(tuple,list),update=bool)
@@ -581,7 +583,8 @@ class AtomCollection(ABC):
         elif n==self._n and m==self._m and l==self._l:
             raise AtomCollectionError("The current structure size was not changed!")
         elif n>self._maxn or m>self._maxm and l>self._maxl:
-            print("WARNING: Atoms newly created will not be removed if the supercell is subsequently reduced!")
+            if(self._verbose):
+                print("WARNING: Atoms newly created will not be removed if the supercell is subsequently reduced!")
                          
             for i in range(n+1):
                 for j in range(m+1):
@@ -698,6 +701,7 @@ class AtomCollection(ABC):
               % (len(self._atoms),file_name))
         
         self._update()
+        f.close()
     
     def __getitem__(self,idx):
         '''
@@ -716,11 +720,13 @@ class AtomCollection(ABC):
             atom list.
         '''
         maxidx=len(self._atoms)
+        if not isinstance(idx,int):
+            raise AtomCollectionError("Index is not int!")
         
-        if isinstance(idx,int) and idx>=-maxidx and idx<maxidx:
+        if idx>=-maxidx and idx<maxidx:
             return self._atoms[idx]
         else:
-            raise AtomCollectionError("Invalid index!")
+            raise AtomCollectionError("Invalid index in get item!")
 
     @dispatch(int,int)
     def __setitem__(self,idx,atomid):
@@ -766,7 +772,7 @@ class AtomCollection(ABC):
             else:
                 raise AtomCollectionError("'atomid' must be an integer greater than or equal to zero!")            
         else:
-            raise AtomCollectionError("Invalid index!")
+            raise AtomCollectionError("Invalid index in set item!")
     
     @dispatch(int,Atom)
     def __setitem__(self,idx,atom):
@@ -804,7 +810,7 @@ class AtomCollection(ABC):
             else:
                 raise AtomCollectionError("Atom already belongs to another structure!")
         else:
-            raise AtomCollectionError("Invalid index!")
+            raise AtomCollectionError("Invalid index in set item Atom dispatch!")
     
     def __len__(self):
         '''

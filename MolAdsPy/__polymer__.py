@@ -99,7 +99,7 @@ class Polymer(AtomCollection):
         
         
     @dispatch(str,list,vaccuum=(int,float))    
-    def __init__(self,label,atom_list,vaccuum=10.0,metric_method='min_max',repetition_orientation=0):
+    def __init__(self,label,atom_list,vaccuum=10.0,metric_method='min_max',repetition_orientation=0,**kwargs):
         '''
         Object initialization.
 
@@ -115,7 +115,7 @@ class Polymer(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         '''
-        super().__init__()
+        super().__init__(**kwargs)
 
         self._metric_method = metric_method
         self._dic_metric_method = None
@@ -304,12 +304,15 @@ class Polymer(AtomCollection):
         
         if isinstance(x,ndarray) and x.shape[0]==3:
             disp=x.astype(float)-self._anchors[anchor]
-            
-            self.displace(disp)
+            allowed_move = array([0.0,0.0,0.0])
+            for k,coord in enumerate(x):
+                if k != self._orientation:
+                        allowed_move[k] = x[k]
+            self.displace(allowed_move)
         else:
             raise PolymerError("'x' must be an array with three components!")
 
-    def _rotate(self,theta,phi,psi,anchor="com"):
+    def _rotate(self,theta,phi,psi,anchor="com",**kwargs):
         '''
         _rotate(theta,phi,psi,anchor) -> rotates the polymer around an anchor point. 
         This method is private because it allows to rotate the polymer object with all degrees of freedom.
@@ -361,9 +364,9 @@ class Polymer(AtomCollection):
                 self._anchors[key]=dot((self._anchors[key]-rotpoint),
                                        rotmatrix)+rotpoint                
         
-        self._update()
+        self._update(**kwargs)
     
-    def align(self, axis):
+    def align(self, axis, **kwargs):
         """
         Aligns the polymer along the specified axis.
 
@@ -435,11 +438,8 @@ class Polymer(AtomCollection):
             rotation_angles[right_angle] = angle_sign*90.0
             phi, theta, psi = rotation_angles
 
-            self._rotate(theta,phi,psi,anchor="origin")
+            self._rotate(theta,phi,psi,anchor="origin",**kwargs)
 
-            self._update()
-
-            
             # TODO: Permutate new align, change max and min of old axis by new one
             # Obtain polymer orientation from the maximum diff max - min. TODO: Reimplement
             
@@ -501,12 +501,12 @@ class Polymer(AtomCollection):
         
         super().resize(n,m,l)
                        
-    def _update(self):
+    def _update(self,**kwargs):
         '''
         _update() -> simultaneously updates the polymer's center of mass and 
         the values of its extremities.
         '''
-        
+        update_parent = kwargs.get("update_parent",True)
 
         valid_coords=array([atom._x for atom in self.active_atoms])
         atomic_mass=array([atom.atomic_mass for atom in self.active_atoms])
@@ -541,6 +541,10 @@ class Polymer(AtomCollection):
                                 [0.0,1.0,0.0],
                                 [0.0,0.0,1.0]])
             self._origin=array([0.0,0.0,0.0])
+
+        if(update_parent):
+            if(self._belongs_to != None):
+                self.belongs_to._update()
             
     def __str__(self):
         '''

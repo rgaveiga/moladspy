@@ -11,7 +11,7 @@ class Hybrid(AtomCollection,ABC):
     __slots__=["_components","_a0","_latvec","_n","_m","_l","_maxn","_maxm",
                "_maxl","_origin"]
     
-    def __init__(self):
+    def __init__(self,**kwargs):
         '''
         Object initialization.
         '''
@@ -24,6 +24,7 @@ class Hybrid(AtomCollection,ABC):
         self._maxn=self._maxm=self._maxl=0      # Maximum number of translations for resizing purposes
         self._origin=array([0.0,0.0,0.0])       # Position with minimum values of X, Y, and Z coordinates of the structure.
         
+        self._verbose = kwargs.get("verbose",False)
         type(self)._append(self)
         
     @abstractmethod
