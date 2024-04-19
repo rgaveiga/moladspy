@@ -15,6 +15,10 @@ from inspect import signature
 import unittest
 import os
 import sys
+import logging
+
+# logging.basicConfig(level=logging.DEBUG, filename='logs.log', format = -)
+
 
 '''
 
@@ -73,6 +77,8 @@ class TestPolymerSlabAdsorption(unittest.TestCase):
         '''
         print("\n\n### Test Align Polymer Outputs ###\n\n")
         glob = GlobalsForTest()
+        
+        
         chosen_polymer = glob.pol       # Chosen Polymer for the test (Asserts will always be with already generated files)
         chosen_slab = glob.graphene     # Chosen Slab for the test
         initial_min_sep = 1.0           # min_sep that is initialized with Adsorption obj
@@ -80,13 +86,12 @@ class TestPolymerSlabAdsorption(unittest.TestCase):
         initial_vaccuum = 10.0          # Vaccumm that will be initialized in Adorption objs
         initial_slab_resize_x = 4       # X Resize for Slabs
         initial_slab_resize_y = 2       # Y Resize for Slabs
-        verbose = False                  # Print messages during operations ?
-
+        
         # First Test : Check if Adsorption raises the correct error when trying to add a polymer incorrectly
         #   aligned with the Slab (z)
         first_test_axis_correct_expected = ['x','y']
         first_test_axis_error_expected = 'z'
-
+        verbose = False
         
         axis = ['x','y','z']
 
@@ -107,6 +112,7 @@ class TestPolymerSlabAdsorption(unittest.TestCase):
         for ax,ads in adsorbeds.items():
             try:
                 ads.add_component(pols[ax],vertsep=test_vertsep,side="top")
+                ads.write_xyz((os.path.join(glob.results_folder,"align_test.init_align_" + str(ax) + ".xyz")))
                 print("Adsorption obj successfully accepted polymer initially aligned in " + ax)
             except Exception as e:
                 print(e)
@@ -116,18 +122,40 @@ class TestPolymerSlabAdsorption(unittest.TestCase):
 
         # TODO: Second test is if it is possible to realign wrong with polymer already in Adsorption object
 
+        print()
+        print()
+        print("Entered Align in Ads")
+        print()
+        print()
         for _ax,pol in pols.items():
             for ax in axis:
                 try:
                     pol.align(ax)
-                    adsorbeds[ax].write_xyz(os.path.join(glob.results_folder,"align_test." + str(_ax) + ".to_" + str(ax) + ".xyz"))
+                    adsorbeds[_ax].write_xyz(os.path.join(glob.results_folder,"align_test." + str(_ax) + ".to_" + str(ax) + ".xyz"))
                     print("Polymer initial aligned with " + _ax + " was successfully aligned with " + ax + " axis.")
                 except Exception as e:
-                    adsorbeds[ax].write_xyz(os.path.join(glob.results_folder,"align_test." + str(_ax) + ".to_" + str(ax) + ".xyz"))
+                    adsorbeds[_ax].write_xyz(os.path.join(glob.results_folder,"align_test." + str(_ax) + ".to_" + str(ax) + ".xyz"))
                     print("Polymer initial aligned with " + _ax + " when tried to align with " + ax + " axis, it raised the error below:")
                     print(e)
                     #self.assertEqual(first_test_axis_error_expected,ax,"Raised error correctly.")
 
+    def test_resize(self):
+        glob = GlobalsForTest()
+        tmp_pol = glob.pol.copy()
+        tmp_pol_sized = glob.pol.copy()
+
+        tmp_pol.write_xyz(os.path.join(glob.results_folder,"original.xyz"))
+        tmp_slab = glob.graphene.copy()
+
+        n = 5
+        tmp_pol_sized.resize(n)
+        for i in range(n):
+            tmp_pol.resize(i)
+            tmp_slab.resize(i,0)
+            tmp_pol_sized.resize(n-i)
+            tmp_pol.write_xyz(os.path.join(glob.results_folder,"resize_" + str(i) + ".xyz"))
+            tmp_slab.write_xyz(os.path.join(glob.results_folder,"slab_resize_" + str(i) + ".xyz"))
+            tmp_pol_sized.write_xyz(os.path.join(glob.results_folder,"resize_reverse_" + str(i) + ".xyz"))
 
     # TODO: Verify 3 Aligns as input
     # TODO: Test for Top and Bottom, several set_separation, without violation, and with violation.
@@ -321,6 +349,7 @@ if __name__=='__main__':
      #unittest.main()
     tmp = TestPolymerSlabAdsorption()
     tmp.test_align_polymer_in_adsorption()
+    #tmp.test_resize()
 
 
 

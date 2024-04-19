@@ -377,20 +377,27 @@ class Adsorption(Hybrid):
         polymer : Polymer object
             Object of the polymer that will be adjusted over the slab
         '''
-        
-        # Resize necessary to minimize mismatch between polymer and slab
-        i,j = self._polymer_slab_match_box_length(polymer)
         slab = self._components["substrate"]
+
+        # Reset resize of Polymer and Slab on the polymer orientation
+        
         resize_vector = [slab._n,slab._m,slab._l]
+        resize_vector[polymer._orientation] = 0
+        slab.resize(resize_vector[0],resize_vector[1])
 
-        resize_vector[polymer._orientation] = i  
+        # Resize necessary to minimize mismatch between polymer and slab
+        rezize_slab,resize_polymer = self._polymer_slab_match_box_length(polymer)
+        resize_vector = [slab._n,slab._m,slab._l]
+        resize_vector[polymer._orientation] = rezize_slab 
 
-        if(self._verbose):
-            print("Slab will be resized by : " + str(resize_vector))
-
+        print()
+        print("Previous Resize Slab: " + str(slab._n) + ", " + str(slab._m) + ", " + str(slab._l))
+        print("Previous Resize Polymer: " + str(polymer._n) + ", " + str(polymer._m) + ", " + str(polymer._l))
+        print("Slab will be resized by : " + str(resize_vector))
+        print("Polymer will be resized: " + str(resize_polymer))
         # Resizing objects
         slab.resize(resize_vector[0],resize_vector[1])
-        polymer.resize(j)
+        polymer.resize(resize_polymer)
     
     def _polymer_slab_match_box_length(self,polymer,mismatch_tol_percent=__MISMATCHTOLSTD__,maxrep=__MAXREPMISMATCH__):
         '''
@@ -414,14 +421,24 @@ class Adsorption(Hybrid):
 
         pol_ori = polymer._orientation
         slab = self._components["substrate"]
+        
+        # This exists to get original size of cells independent of previous resizing
+        polymer_resize_vector = [polymer._n,polymer._m,polymer._l]
+        polymer_original_resize = polymer_resize_vector[pol_ori]
+        slab_original_resize_vector = [slab._n,slab._m,slab._l]
+        slab_original_resize = slab_original_resize_vector[pol_ori]
+
         a0_1 = slab._a0*slab._latvec[pol_ori][pol_ori]
         a0_2 = polymer._a0*polymer._latvec[pol_ori][pol_ori]
-        if(self._verbose):
-            print("a0 polymer: " + str(a0_2))
-            print("a0 slab: " + str(a0_1))
-            print("latvec polymer: " + str(polymer._latvec))
-            print("latvec slab: " + str(slab._latvec))
 
+        print()
+        print("Polymer Original Resize: " + str(polymer_original_resize))
+        print("Slab Original Resize: " + str(slab_original_resize))
+        print("a0 polymer: " + str(a0_2))
+        print("a0 slab: " + str(a0_1))
+        print("latvec polymer: " + str(polymer._latvec))
+        print("latvec slab: " + str(slab._latvec))
+        
         i = 1
         while(i < maxrep):
             j = int(a0_1*i/a0_2)
@@ -515,7 +532,7 @@ class Adsorption(Hybrid):
                 self._update()
     
     @dispatch(int,(int,float))
-    def set_separation(self,molid,sep):
+    def set_separation(self,molid,sep,**kwargs):
         '''
         Rigidly displaces the molecule along the direction perpendicular to the 
         substrate, such that the separation between the top/bottom of the substrate 
@@ -555,8 +572,34 @@ class Adsorption(Hybrid):
     #endregion
 
 
-    
-        
+    #region Begin and End Hanlders for children methods
+
+    def beginHandler(self,obj,method,method_locals,**kwargs):
+        '''
+        This Handler is used on the begining of AtomCollection objects
+        to communicate to the Hybrid arguments and the method and check if the operation
+        if valis when the object is bounded by this Hybrid
+
+        Parameters
+        ----------
+        obj : AtomCollection
+            ID of the adsorbed molecule.
+        sep : float
+            Nearest distance separating the molecule from the substrate.
+        '''
+        if isinstance(obj,Polymer):
+            if(method.__name__ == 'align'):
+                if(method_locals['axis'] == 'z'):
+                    raise AdsorptionError("Cant align to z!")
+                obj.resize(0)
+
+
+    def endHandler(self,obj,method,method_locals,**kwargs):
+        if isinstance(obj,Polymer):
+            if(method.__name__ == 'align'):
+                self._adjustMismatchPolymerSlab(obj)
+    #endregion
+
     def resize(self,n,m):
         '''
         Resizes the substrate in the XY plane.
@@ -578,14 +621,6 @@ class Adsorption(Hybrid):
         Updates attributes of the Adsorption object when atomic coordinates or 
         cell shape or cell size change.
         '''
-
-        if len(self.adsorbed_polymers) > 0:
-            polymer = self.adsorbed_polymers[0]
-            if(polymer._orientation == 2):
-                tmp_axis = ['x','y','z']
-                axis = tmp_axis[polymer._old_orientation]
-                polymer.align(axis,update_parent=False)
-                raise AdsorptionError("Cannot align polymer perpedicular to slab!")
 
         self._a0=self._components["substrate"]._a0
         self._m=self._components["substrate"]._m

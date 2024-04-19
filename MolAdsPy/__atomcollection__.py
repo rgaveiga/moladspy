@@ -262,7 +262,7 @@ class AtomCollection(ABC):
         n=self._n+1 if not ucell else 1
         m=self._m+1 if not ucell else 1
         l=self._l+1 if not ucell else 1
-        
+    
         for atom in self._atoms:
             i,j,k=self._loc[atom._id]
             
@@ -560,8 +560,14 @@ class AtomCollection(ABC):
             
         with open(file_name,"w") as f:
             f.write(inpstr)
-
+    
+    # TODO: Rename to replicate.
     def resize(self,n,m,l):
+        #print("max")
+        #print(self._maxn, self._maxm,self._maxl)
+        #print("input")
+        #print(n,m,l)
+        print(n,m,l)
         '''
         Resizes the atom collection structure.
 
@@ -581,8 +587,10 @@ class AtomCollection(ABC):
                 and n>=0 and m>=0 and l>=0):
             raise AtomCollectionError("'n', 'm' and 'l' values must be integers greater than or equal to zero!")            
         elif n==self._n and m==self._m and l==self._l:
-            raise AtomCollectionError("The current structure size was not changed!")
-        elif n>self._maxn or m>self._maxm and l>self._maxl:
+            if(self._verbose):
+                print("The current structure size was not changed!")
+            return
+        elif n>self._maxn or m>self._maxm or l>self._maxl:
             if(self._verbose):
                 print("WARNING: Atoms newly created will not be removed if the supercell is subsequently reduced!")
                          
@@ -605,11 +613,12 @@ class AtomCollection(ABC):
             self._maxn=max([self._maxn,n])
             self._maxm=max([self._maxm,m])
             self._maxl=max([self._maxl,l])
-                
+
         self._n=n
         self._m=m
         self._l=l
-        
+        print()
+        print(self._n)
         self._update()
 
     def copy(self):
@@ -955,6 +964,7 @@ class AtomCollection(ABC):
         else:
             raise AtomCollectionError("Lattice vectors must be a Numpy array with three vectors!")
 
+        
     @property
     def origin(self):
         return self._origin

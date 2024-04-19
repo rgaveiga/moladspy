@@ -15,6 +15,7 @@ class Hybrid(AtomCollection,ABC):
         '''
         Object initialization.
         '''
+        
         self._components={}                     # Dictionary of objects that are put together to form the hybrid system
         self._a0=1.0                            # Lattice constant
         self._latvec=array([[1.0,0.0,0.0],
@@ -42,6 +43,22 @@ class Hybrid(AtomCollection,ABC):
         to remove an atom collection object from the hybrid system.
         '''        
         pass    
+
+    @abstractmethod
+    def beginHandler(self,obj,method,**kwargs):
+        '''
+        To be implemented in a derived hybrid structure, this method is expected 
+        to make the hybrid structure reconsntruct itself when an object is realigned inside it.
+        '''  
+        pass
+
+    @abstractmethod
+    def endHandler(self,obj,method,**kwargs):
+        '''
+        To be implemented in a derived hybrid structure, this method is expected 
+        to make the hybrid structure reconsntruct itself when an object is realigned inside it.
+        '''  
+        pass
 
     def force_update(self):
         '''

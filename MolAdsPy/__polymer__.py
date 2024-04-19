@@ -189,7 +189,7 @@ class Polymer(AtomCollection):
         else:
             raise PolymerError("'anchor' is not a valid anchor point!")
         
-    def write_xyz(self,file_name="polymer.xyz"):
+    def write_xyz(self,file_name="polymer.xyz",ucell=False):
         '''
        Saves the atomic coordinates of the polymer into an XYZ file.
 
@@ -199,7 +199,7 @@ class Polymer(AtomCollection):
             Name of the XYZ file. The default is "polymer.xyz".
 
         '''
-        super().write_xyz(file_name,ucell=True)          
+        super().write_xyz(file_name,ucell=ucell)          
                 
     def write_pw_input(self,file_name="polymer.in",pseudopotentials={},pwargs={}):
         '''
@@ -365,8 +365,14 @@ class Polymer(AtomCollection):
                                        rotmatrix)+rotpoint                
         
         self._update(**kwargs)
-    
+
     def align(self, axis, **kwargs):
+        if self._belongs_to != None:
+                try:
+                    self._belongs_to.beginHandler(self,self.align,locals(),**kwargs)
+                except Exception as e:
+                    raise e
+        
         """
         Aligns the polymer along the specified axis.
 
@@ -391,7 +397,10 @@ class Polymer(AtomCollection):
             # Hold previous orientation
             self._old_orientation = self._orientation
             self._orientation = new_orientation
-            
+            print()
+            print("Original Orientation: " + str(self._old_orientation))
+            print("New Orientation: " + str(self._orientation))
+            print()
             # Dictionary to map the axis of the rotation angles (theta, phi, psi)
             # This values are examples and must be adjusted by necessity
             # Theta: Axis Y Rotation
@@ -439,6 +448,12 @@ class Polymer(AtomCollection):
             phi, theta, psi = rotation_angles
 
             self._rotate(theta,phi,psi,anchor="origin",**kwargs)
+
+            if self._belongs_to != None:
+                try:
+                    self._belongs_to.endHandler(self,self.align,locals(),**kwargs)
+                except Exception as e:
+                    raise e
 
             # TODO: Permutate new align, change max and min of old axis by new one
             # Obtain polymer orientation from the maximum diff max - min. TODO: Reimplement
@@ -498,7 +513,7 @@ class Polymer(AtomCollection):
             m = n_axis
         elif(self._orientation == 2):
             l = n_axis
-        
+        #print(n,m,l)
         super().resize(n,m,l)
                        
     def _update(self,**kwargs):
@@ -526,9 +541,9 @@ class Polymer(AtomCollection):
                 if(i != self._orientation):
                     vaccuum_vec[i][i] = self._vaccuum
 
-            self._latvec=array([[self._maxx-self._minx,0.0,0.0],
-                                [0.0,self._maxy-self._miny,0.0],
-                                [0.0,0.0,self._maxz-self._minz]])
+            self._latvec=array([[(self._maxx-self._minx)/(self._n + 1),0.0,0.0],
+                                [0.0,(self._maxy-self._miny)/(self._m + 1),0.0],
+                                [0.0,0.0,(self._maxz-self._minz)/(self._l + 1)]])
             self._latvec = self._latvec + vaccuum_vec
             self._origin=array([self._minx,self._miny,self._minz])
 
