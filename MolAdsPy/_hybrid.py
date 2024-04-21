@@ -1,7 +1,7 @@
 from __future__ import print_function
-from __atomcollection__ import AtomCollection
-from __exception__ import BasicException
-from abc import ABC, abstractmethod
+from ._atomcollection import AtomCollection
+from ._exception import BasicException
+from abc import ABC,abstractmethod
 from numpy import array
 
 
@@ -26,23 +26,21 @@ class Hybrid(AtomCollection, ABC):
     def __init__(self, **kwargs):
         """
         Object initialization.
+        
         """
-
         self._components = (
             {}
         )  # Dictionary of objects that are put together to form the hybrid system
-        self._a0 = 1.0  # Lattice constant
+        self._a0 = 1.0  # Lattice constant of the hybrid object
         self._latvec = array(
             [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-        )  # Lattice vectors
-        self._n = (
-            self._m
-        ) = (
-            self._l
-        ) = 0  # Number of translations along the first, second and third lattice vectors
-        self._maxn = (
-            self._maxm
-        ) = self._maxl = 0  # Maximum number of translations for resizing purposes
+        )  # Lattice vectors of the hybrid object
+        self._n = 0  # Number of translations along the first lattice vector
+        self._m = 0  # Number of translations along the second lattice vector
+        self._l = 0  # Number of translations along the third lattice vector
+        self._maxn = 0  # Maximum number of translations already perfomed along the first lattice vector
+        self._maxm = 0  # Maximum number of translations already perfomed along the second lattice vector
+        self._maxl = 0  # Maximum number of translations already perfomed along the third lattice vector
         self._origin = array(
             [0.0, 0.0, 0.0]
         )  # Position with minimum values of X, Y, and Z coordinates of the structure.
@@ -55,6 +53,7 @@ class Hybrid(AtomCollection, ABC):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to add atom collection objects to the hybrid system.
+        
         """
         pass
 
@@ -63,29 +62,37 @@ class Hybrid(AtomCollection, ABC):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to remove an atom collection object from the hybrid system.
+        
         """
         pass
 
     @abstractmethod
     def beginHandler(self, obj, method, **kwargs):
+        #TODO: rename to begin_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
         """
         To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconsntruct itself when an object is realigned inside it.
+        to make the hybrid structure reconstruct itself when an object is realigned 
+        inside it.
         """
         pass
 
     @abstractmethod
     def endHandler(self, obj, method, **kwargs):
+        #TODO: rename to end_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
         """
         To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconsntruct itself when an object is realigned inside it.
+        to make the hybrid structure reconstruct itself when an object is realigned 
+        inside it.
+
         """
         pass
 
     def force_update(self):
+        #TODO: remove this, I think there is no situation where it will be required
         """
         Forces the hybrid system's attributes to be updated if there is a change
         in the attributes of any of its components.
+        
         """
         self._update()
 
@@ -97,26 +104,38 @@ class Hybrid(AtomCollection, ABC):
         ----------
         file_name : string, optional
             Name of the XYZ file. The default is "coords.xyz".
+            
         """
         super().write_xyz(file_name, ucell=False)
 
     def write_pw_input(self, file_name="pw.in", pseudopotentials={}, pwargs={}):
         """
-        Creates a basic input file for geometry relaxation of the hybrid system
-        using the pw.x code found in the Quantum Espresso package.
+        Creates a basic input file for geometry relaxation of the structure using
+        the pw.x code found in the Quantum Espresso package.
 
         Parameters
         ----------
         file_name : string, optional
             Name of the input file. The default is "pw.in".
+        ucell : logical, optional
+            Write only the coordinates of atoms in the unit cell. The default is
+            False.
         pseudopotentials : Python dictionary, optional
             Specify for each element provided as a key the name of a pseudopotential
             file given as the corresponding value. The default is {}.
-        pwargs : Python dictionary
+        pwargs : Python dictionary.
             Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
-            Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
+            of the input file. For additional information, check out 'pw.x'
+            documentation. These are currently the accepted keys:
+                calculation : string, optional
+                    Type of calculation to be carried out. It must be either
+                    'relax' or 'vc-relax'. The default is 'relax'.
+                ibrav : integer, optional
+                    Bravais lattice. The default is 0.
+                celldm(2)-celldm(6) : float, optional (depending on 'ibrav')
+                    Crystallographic constants that can be provided depending on
+                    'ibrav' value. 'celldm(1)', the lattice parameter, is calculated
+                    from the 'a0' property of the atom collection object.
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
@@ -158,36 +177,42 @@ class Hybrid(AtomCollection, ABC):
     def copy(self):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def add_atom(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def remove_atom(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def location(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def _read_xyz(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def __setitem__(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
+        
         """
         raise HybridError("Not implemented for hybrid objects!")
 

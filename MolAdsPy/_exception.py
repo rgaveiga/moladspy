@@ -8,9 +8,6 @@ class BasicException(Exception):
         message : string, optional
             Error message to be displayed. The default is "".
 
-        Returns
-        -------
-        None.
         """
         self.message = message
 

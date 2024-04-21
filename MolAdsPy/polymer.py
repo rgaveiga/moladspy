@@ -1,8 +1,8 @@
 from __future__ import print_function
-from __atom__ import Atom
-from __atomcollection__ import AtomCollection
-from __exception__ import BasicException
-from numpy import array, ndarray, min, max, sum, cos, sin, radians, dot, zeros
+from ._atomcollection import AtomCollection
+from ._exception import BasicException
+from .atom import Atom
+from numpy import array,ndarray,min,max,sum,cos,sin,radians,dot
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -23,6 +23,7 @@ class Polymer(AtomCollection):
         "_anchors",
     ]
 
+    #TODO: function signature is wrong; this initializator will never be called
     @dispatch(str, vaccuum=(int, float))
     def __init__(
         self, label, vaccuum=10.0, repetition_orientation=0, metric_method="min_max"
@@ -40,11 +41,11 @@ class Polymer(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
+        #TODO: Check Slab and Molecule, where **kwargs were passed to AtomCollection constructor
         super().__init__()
 
         self._orientation = repetition_orientation
-        self._old_orientation = repetition_orientation
-        # x by standard
+        self._old_orientation = repetition_orientation # x by default
 
         self._metric_method = metric_method
         self._dic_metric_method = None
@@ -61,10 +62,13 @@ class Polymer(AtomCollection):
 
         self._maxx = self._maxy = self._maxz = None  # Maximum Cartesian coordinates
         self._minx = self._miny = self._minz = None  # Minimum Cartesian coordinates
+        
+        #TODO: Polymer does not need anchors; remove in the next version
         self._anchors = {
             "com": array([0.0, 0.0, 0.0])
         }  # Anchor points for translations and rotations
 
+    #TODO: signature is wrong; how can this method be called?
     @dispatch(str, str, file_type=str, vaccuum=(int, float))
     def __init__(
         self,
@@ -121,6 +125,7 @@ class Polymer(AtomCollection):
         else:
             raise PolymerError("'file_name' must be a valid file name!")
 
+    #TODO: This initialization uses **kwargs and pass **kwargs to the superclass constructor; why?
     @dispatch(str, list, vaccuum=(int, float))
     def __init__(
         self,
@@ -181,6 +186,7 @@ class Polymer(AtomCollection):
 
         self._update()
 
+    #TODO: Polymer does not have anchor points; to be removed in a next version
     def add_anchor(self, anchor, pos):
         """
         add_anchor(anchor,pos) -> adds a new anchor point that can be used as
@@ -206,6 +212,7 @@ class Polymer(AtomCollection):
         else:
             raise PolymerError("'anchor' must be a non-empty string!")
 
+    #TODO: Polymer does not have anchor points; to be removed in a next version
     def remove_anchor(self, anchor):
         """
         remove_anchor(anchor) -> removes an anchor point.
@@ -283,6 +290,7 @@ class Polymer(AtomCollection):
 
         """
         pwargs["kvec"] = [1, 1, 1, 0, 0, 0]
+        pwargs["ibrav"] = 0
         ucell = True
 
         super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
@@ -297,10 +305,12 @@ class Polymer(AtomCollection):
             Copy of the Molecule object.
         """
         newmol = super().copy()
+        #TODO: Polymer does not have anchors; remove in a next version
         newmol._anchors = deepcopy(self._anchors)
 
         return newmol
 
+    #TODO: This method must be refactored to be adequate for a Polymer
     def displace(self, disp):
         """
         displace(disp) -> rigidly displaces the polymer.
@@ -316,6 +326,7 @@ class Polymer(AtomCollection):
             if key != "com":
                 self._anchors[key] += disp
 
+    #TODO: This method must be refactored to be adequate for a Polymer
     def move_to(self, x, anchor="com"):
         """
         move_to(x,anchor) -> rigidly moves the polymer such that the anchor
@@ -503,6 +514,7 @@ class Polymer(AtomCollection):
         phi, theta, psi = rotation_angles
         self._rotate(theta, phi, psi, anchor="polymer_axis")
 
+    #TODO: shorten the function name; _calc_rotation_axis() it is enough
     def _calculate_polymer_rotation_axis_center(self, metric_method="min_max"):
         '''
         Calculates the center position in the polymer perpendicular plane through a given metric
@@ -551,6 +563,8 @@ class Polymer(AtomCollection):
         _update() -> simultaneously updates the polymer's center of mass and
         the values of its extremities.
         """
+        #TODO: Rename; I prefer owner and owned, parent evocates inheritance, which is not the case
+        #TODO: The same logic must be applied to Atom, Molecule and Slab, check TODOs there
         update_parent = kwargs.get("update_parent", True)
 
         valid_coords = array([atom._x for atom in self.active_atoms])
@@ -570,6 +584,7 @@ class Polymer(AtomCollection):
                     (self.maxz + self.minz) / 2.0,
                 ]
             )
+            #TODO: Rename; those are not anchors; variable names must be descriptive
             self._anchors["geometric_center"] = sum(
                 valid_coords.transpose(), axis=1
             ) / len(self)
@@ -602,6 +617,7 @@ class Polymer(AtomCollection):
             self._latvec = array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
             self._origin = array([0.0, 0.0, 0.0])
 
+        #TODO: The conditions can be concatenated with and 'and' in one line
         if update_parent:
             if self._belongs_to != None:
                 self.belongs_to._update()

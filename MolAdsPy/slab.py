@@ -1,8 +1,8 @@
 from __future__ import print_function
-from __atom__ import Atom
-from __atomcollection__ import AtomCollection
-from __exception__ import BasicException
-from numpy import array, ndarray, min, max
+from ._atomcollection import AtomCollection
+from ._exception import BasicException
+from .atom import Atom
+from numpy import array,ndarray,min,max
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -28,6 +28,7 @@ class Slab(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
+        #TODO: Check in Molecule, same question
         super().__init__(**kwargs)
 
         if len(label) > 0:
@@ -139,7 +140,7 @@ class Slab(AtomCollection):
                 if isinstance(atom, (Atom, int)):
                     self.add_atom(atom, loc=(0, 0, 0), update=False)
                 else:
-                    if self.verbose:
+                    if self._verbose:
                         print(
                             "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
                         )
@@ -194,6 +195,7 @@ class Slab(AtomCollection):
         ----------
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
+            
         """
         super().displace(disp)
 
@@ -252,28 +254,36 @@ class Slab(AtomCollection):
             Specify for each element provided as a key the name of a pseudopotential
             file given as the corresponding value. The default is {}.
         pwargs : Python dictionary.
-            Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
-            Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
+            Dictionary containing key-value pairs that allow some customization 
+            of the input file. For additional information, check out 'pw.x' 
+            documentation. These are currently the accepted keys:
+                calculation : string, optional
+                    Type of calculation to be carried out. It must be either 
+                    'relax' or 'vc-relax'. The default is 'relax'.
+                ibrav : integer, optional
+                    Bravais lattice. The default is 0.
+                celldm(2)-celldm(6) : float, optional (depending on 'ibrav')
+                    Crystallographic constants that can be provided depending on 
+                    'ibrav' value. 'celldm(1)', the lattice parameter, is calculated 
+                    from the 'a0' property of the atom collection object.
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
                     Charge density cutoff. The default is 128 Ry.
                 nspin : integer, optional
-                    Spin polarization. It can be either 1 (non-polarized) or
+                    Spin polarization. It can be either 1 (non-polarized) or 
                     2 (polarized, magnetization along z axis). The default is 1.
                 occupations : string, optional
                     Occupation function. The default is 'fixed'.
                 smearing : string, optional
-                    Smearing for metals, if the occupation function is 'smearing'.
+                    Smearing for metals, if the occupation function is 'smearing'. 
                     The defautl is 'gaussian'.
                 degauss : float, optional
-                    Gaussian spreading, in Ry, if the occupation function is
+                    Gaussian spreading, in Ry, if the occupation function is 
                     'smearing'. The default is 0.02 Ry.
                 starting_magnetization : Python list, optional
-                    List of starting magnetic moments for the different atom
-                    types in the slab. The default is 1.0 Bohr magneton
+                    List of starting magnetic moments for the different atom 
+                    types in the slab. The default is 1.0 Bohr magneton 
                     for the first atom type and 0.0 for the others, if any.
                 input_dft : string, optional
                     It allows to activate non-local vdW interaction by setting
@@ -286,7 +296,7 @@ class Slab(AtomCollection):
                 mixing_beta : float, optional
                     Beta parameter in charge mixing. The default is 0.7.
                 kvec : Python list, optional
-                    Grid (first three elements) and shift (last three
+                    Grid (first three elements) and shift (last three 
                     components) used to generate k-points according to the
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
 
@@ -301,6 +311,7 @@ class Slab(AtomCollection):
         -------
         Slab object
             Copy of the Slab object.
+            
         """
         newslab = super().copy()
         newslab._ads_sites = deepcopy(self._ads_sites)
@@ -345,6 +356,7 @@ class Slab(AtomCollection):
         -------
         String.
             A string containing the name and ID of the Slab object.
+            
         """
         return "<Slab object> Name: %s; ID: %d" % (self._label, self._id)
 

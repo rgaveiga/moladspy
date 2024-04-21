@@ -1,8 +1,8 @@
 from __future__ import print_function
-from __atom__ import Atom
-from __atomcollection__ import AtomCollection
-from __exception__ import BasicException
-from numpy import array, ndarray, min, max, sum, cos, sin, radians, dot
+from ._atomcollection import AtomCollection
+from ._exception import BasicException
+from .atom import Atom
+from numpy import array,ndarray,min,max,sum,cos,sin,radians,dot
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -38,6 +38,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
+        #TODO: Check the need of **kwargs, since it does not change anything in the constructor
         super().__init__(**kwargs)
 
         if len(label) > 0:
@@ -76,6 +77,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
+        #TODO: Check this, since for this signature it does not send **kwargs
         super().__init__()
 
         if len(label) > 0:
@@ -139,7 +141,7 @@ class Molecule(AtomCollection):
                 if isinstance(atom, (Atom, int)):
                     self.add_atom(atom, loc=(0, 0, 0), update=False)
                 else:
-                    if self.verbose:
+                    if self._verbose:
                         print(
                             "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
                         )
@@ -249,8 +251,10 @@ class Molecule(AtomCollection):
                     Beta parameter in charge mixing. The default is 0.7.
 
         """
-        pwargs["kvec"] = [1, 1, 1, 0, 0, 0]
-        ucell = True
+        pwargs["calculation"]="relax"
+        pwargs["ibrav"]=0
+        pwargs["kvec"]=[1,1,1,0,0,0]
+        ucell=True
 
         super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
 
@@ -312,6 +316,7 @@ class Molecule(AtomCollection):
             raise MoleculeError("'x' must be an array with three components!")
 
     def rotate(self, theta, phi, psi, anchor="com"):
+        #TODO: Add kwargs with update and update_owner keys to control wheter to call the _update methods or not
         """
         rotate(theta,phi,psi,anchor) -> rotates the molecule around an anchor point.
 
@@ -362,7 +367,8 @@ class Molecule(AtomCollection):
                 self._anchors[key] = (
                     dot((self._anchors[key] - rotpoint), rotmatrix) + rotpoint
                 )
-
+                
+        #TODO: This has to be fixed. Like that, it never calls the _update() method of the hybrid object
         self._update()
 
     def resize(self):
@@ -376,6 +382,7 @@ class Molecule(AtomCollection):
         """
         _update() -> simultaneously updates the molecule's center of mass and
         the values of its extremities.
+        
         """
         valid_coords = array([atom._x for atom in self.active_atoms])
         atomic_mass = array([atom.atomic_mass for atom in self.active_atoms])
@@ -410,6 +417,7 @@ class Molecule(AtomCollection):
         -------
         String.
             A string containing the type and ID of the Molecule object.
+            
         """
         return "<Molecule object> Type: %s; ID: %d" % (self._label, self._id)
 
