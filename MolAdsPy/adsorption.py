@@ -647,11 +647,11 @@ class Adsorption(Hybrid):
             if method.__name__ == "align":
                 self._adjustMismatchPolymerSlab(obj)
 
-    @dispatch(Molecule, object)
+    @dispatch(Molecule, object, list)
     def _begin_handler(self, molecule, method, *args, **kwargs):
         pass
 
-    @dispatch(Molecule, object)
+    @dispatch(Molecule, object, list)
     def _end_handler(self, molecule, method, *args, **kwargs):
         if method.__name__ in ("displace", "move_to", "rotate"):
             dz = 0.0
