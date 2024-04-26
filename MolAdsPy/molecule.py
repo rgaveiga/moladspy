@@ -1,8 +1,9 @@
 from __future__ import print_function
 from ._atomcollection import AtomCollection
+from ._utils import apply_owner_rules
 from ._exception import BasicException
 from .atom import Atom
-from numpy import array,ndarray,min,max,sum,cos,sin,radians,dot
+from numpy import array, ndarray, min, max, sum, cos, sin, radians, dot
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -38,7 +39,6 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        #TODO: Check the need of **kwargs, since it does not change anything in the constructor
         super().__init__(**kwargs)
 
         if len(label) > 0:
@@ -58,7 +58,7 @@ class Molecule(AtomCollection):
         }  # Anchor points for translations and rotations
 
     @dispatch(str, str, file_type=str, vaccuum=(int, float))
-    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0):
+    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0, **kwargs):
         """
         Object initialization.
 
@@ -77,8 +77,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        #TODO: Check this, since for this signature it does not send **kwargs
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -103,7 +102,7 @@ class Molecule(AtomCollection):
             raise MoleculeError("'file_name' must be a valid file name!")
 
     @dispatch(str, list, vaccuum=(int, float))
-    def __init__(self, label, atom_list, vaccuum=10.0):
+    def __init__(self, label, atom_list, vaccuum=10.0, **kwargs):
         """
         Object initialization.
 
@@ -119,7 +118,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -219,7 +218,8 @@ class Molecule(AtomCollection):
             file given as the corresponding value. The default is {}.
         pwargs : Python dictionary.
             Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
+            of the input file. For additional information, check out 'pw.x'
+            documentation. These are currently the accepted keys:
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
@@ -251,10 +251,10 @@ class Molecule(AtomCollection):
                     Beta parameter in charge mixing. The default is 0.7.
 
         """
-        pwargs["calculation"]="relax"
-        pwargs["ibrav"]=0
-        pwargs["kvec"]=[1,1,1,0,0,0]
-        ucell=True
+        pwargs["calculation"] = "relax"
+        pwargs["ibrav"] = 0
+        pwargs["kvec"] = [1, 1, 1, 0, 0, 0]
+        ucell = True
 
         super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
 
@@ -272,7 +272,8 @@ class Molecule(AtomCollection):
 
         return newmol
 
-    def displace(self, disp):
+    @apply_owner_rules
+    def displace(self, disp, **kwargs):
         """
         displace(disp) -> rigidly displaces the molecule.
 
@@ -287,7 +288,8 @@ class Molecule(AtomCollection):
             if key != "com":
                 self._anchors[key] += disp
 
-    def move_to(self, x, anchor="com"):
+    @apply_owner_rules
+    def move_to(self, x, anchor="com", **kwargs):
         """
         move_to(x,anchor) -> rigidly moves the molecule such that the anchor
         point is located at 'x'.
@@ -315,8 +317,8 @@ class Molecule(AtomCollection):
         else:
             raise MoleculeError("'x' must be an array with three components!")
 
-    def rotate(self, theta, phi, psi, anchor="com"):
-        #TODO: Add kwargs with update and update_owner keys to control wheter to call the _update methods or not
+    @apply_owner_rules
+    def rotate(self, theta, phi, psi, anchor="com", **kwargs):
         """
         rotate(theta,phi,psi,anchor) -> rotates the molecule around an anchor point.
 
@@ -367,8 +369,7 @@ class Molecule(AtomCollection):
                 self._anchors[key] = (
                     dot((self._anchors[key] - rotpoint), rotmatrix) + rotpoint
                 )
-                
-        #TODO: This has to be fixed. Like that, it never calls the _update() method of the hybrid object
+
         self._update()
 
     def resize(self):
@@ -382,7 +383,7 @@ class Molecule(AtomCollection):
         """
         _update() -> simultaneously updates the molecule's center of mass and
         the values of its extremities.
-        
+
         """
         valid_coords = array([atom._x for atom in self.active_atoms])
         atomic_mass = array([atom.atomic_mass for atom in self.active_atoms])
@@ -417,7 +418,7 @@ class Molecule(AtomCollection):
         -------
         String.
             A string containing the type and ID of the Molecule object.
-            
+
         """
         return "<Molecule object> Type: %s; ID: %d" % (self._label, self._id)
 

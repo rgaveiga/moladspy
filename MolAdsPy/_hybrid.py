@@ -1,7 +1,7 @@
 from __future__ import print_function
 from ._atomcollection import AtomCollection
 from ._exception import BasicException
-from abc import ABC,abstractmethod
+from abc import ABC, abstractmethod
 from numpy import array
 
 
@@ -26,7 +26,7 @@ class Hybrid(AtomCollection, ABC):
     def __init__(self, **kwargs):
         """
         Object initialization.
-        
+
         """
         self._components = (
             {}
@@ -53,7 +53,7 @@ class Hybrid(AtomCollection, ABC):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to add atom collection objects to the hybrid system.
-        
+
         """
         pass
 
@@ -62,37 +62,37 @@ class Hybrid(AtomCollection, ABC):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to remove an atom collection object from the hybrid system.
-        
+
         """
         pass
 
     @abstractmethod
     def beginHandler(self, obj, method, **kwargs):
-        #TODO: rename to begin_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
+        # TODO: rename to begin_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
         """
         To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconstruct itself when an object is realigned 
+        to make the hybrid structure reconstruct itself when an object is realigned
         inside it.
         """
         pass
 
     @abstractmethod
     def endHandler(self, obj, method, **kwargs):
-        #TODO: rename to end_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
+        # TODO: rename to end_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
         """
         To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconstruct itself when an object is realigned 
+        to make the hybrid structure reconstruct itself when an object is realigned
         inside it.
 
         """
         pass
 
     def force_update(self):
-        #TODO: remove this, I think there is no situation where it will be required
+        # TODO: remove this, I think there is no situation where it will be required
         """
         Forces the hybrid system's attributes to be updated if there is a change
         in the attributes of any of its components.
-        
+
         """
         self._update()
 
@@ -104,7 +104,7 @@ class Hybrid(AtomCollection, ABC):
         ----------
         file_name : string, optional
             Name of the XYZ file. The default is "coords.xyz".
-            
+
         """
         super().write_xyz(file_name, ucell=False)
 
@@ -177,42 +177,42 @@ class Hybrid(AtomCollection, ABC):
     def copy(self):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def add_atom(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def remove_atom(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def location(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def _read_xyz(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 
     def __setitem__(self, *args):
         """
         This method is disabled for hybrid objects and issues an error message.
-        
+
         """
         raise HybridError("Not implemented for hybrid objects!")
 

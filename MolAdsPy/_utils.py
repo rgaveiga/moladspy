@@ -1,16 +1,18 @@
 from functools import wraps
 
 
-def apply_owner_rules(obj):
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args, **kwargs):
-            owner = obj._belongs_to
+def apply_owner_rules(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        owner = self._belongs_to
+        call_handler = kwargs.get("call_handler", True)
 
-            owner._begin_handler(obj, func, **kwargs) if owner is not None else None
-            func(*args, **kwargs)
-            owner._end_handler(obj, func, **kwargs) if owner is not None else None
+        owner._begin_handler(
+            self, func, *args, **kwargs
+        ) if owner is not None and call_handler else None
+        func(self, *args, **kwargs)
+        owner._end_handler(
+            self, func, *args, **kwargs
+        ) if owner is not None and call_handler else None
 
-        return inner_wrapper
-
-    return outer_wrapper
+    return wrapper

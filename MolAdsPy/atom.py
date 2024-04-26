@@ -1,5 +1,5 @@
 from ._exception import BasicException
-from numpy import array,ndarray
+from numpy import array, ndarray
 
 
 class AtomError(BasicException):
@@ -34,7 +34,7 @@ class Atom:
             a Python list or tuple. The default is [False False False].
         active : logical, optional
             Whether the atom is active or not. The default is True.
-            
+
         """
         if isinstance(symbol, str) and len(symbol) > 0 and len(symbol) <= 4:
             self._symbol = symbol
@@ -80,7 +80,7 @@ class Atom:
         disp : Numpy array
              Displacement vector. It can also be provided as a Python list or
              tuple.
-             
+
         """
         if isinstance(disp, (list, tuple)):
             disp = array(disp)
@@ -101,7 +101,7 @@ class Atom:
         -------
         Atom object
             Copy of the atom.
-            
+
         """
         return Atom(self._symbol, self._x, self._fixed, self._active)
 
@@ -113,7 +113,7 @@ class Atom:
         -------
         String
             A string containing the symbol, the element and the ID of the Atom object.
-            
+
         """
         return "<Atom object> Symbol: %s; Element: %s; ID: %d" % (
             self._symbol,
