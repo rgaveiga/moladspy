@@ -99,7 +99,7 @@ class Molecule(AtomCollection):
                 raise MoleculeError("'file_type' must be 'XYZ'!")
         else:
             raise MoleculeError("'file_name' must be a valid file name!")
-            
+
         self._update(**kwargs)
 
     @dispatch(str, list, vaccuum=(int, float))
@@ -192,10 +192,12 @@ class Molecule(AtomCollection):
          file_name : string, optional
              Name of the XYZ file. The default is "molecule.xyz".
 
-        """       
-        super().write_xyz(file_name, ucell = True, **kwargs)
+        """
+        super().write_xyz(file_name, ucell=True, **kwargs)
 
-    def write_pw_input(self, file_name="molecule.in", pseudopotentials={}, pwargs={}, **kwargs):
+    def write_pw_input(
+        self, file_name="molecule.in", pseudopotentials={}, pwargs={}, **kwargs
+    ):
         """
         Creates a basic input file for geometry relaxation of the molecule using
         the pw.x code found in the Quantum Espresso package.
@@ -246,7 +248,9 @@ class Molecule(AtomCollection):
         pwargs["ibrav"] = 0
         pwargs["kvec"] = [1, 1, 1, 0, 0, 0]
 
-        super().write_pw_input(file_name, pseudopotentials, pwargs, ucell = True, **kwargs)
+        super().write_pw_input(
+            file_name, pseudopotentials, pwargs, ucell=True, **kwargs
+        )
 
     def copy(self):
         """
@@ -270,7 +274,7 @@ class Molecule(AtomCollection):
         ----------
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
-        """        
+        """
         super().displace(disp, **kwargs)
 
         for key in self._anchors.keys():
@@ -291,7 +295,7 @@ class Molecule(AtomCollection):
             Anchor point used as reference for translations. The default is
             'com', which means the molecule's center of mass.
 
-        """       
+        """
         if isinstance(x, (list, tuple)):
             x = array(x)
 

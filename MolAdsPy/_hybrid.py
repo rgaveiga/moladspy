@@ -78,7 +78,9 @@ class Hybrid(AtomCollection, ABC):
         """
         super().write_xyz(file_name, ucell=False, **kwargs)
 
-    def write_pw_input(self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs):
+    def write_pw_input(
+        self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs
+    ):
         """
         Creates a basic input file for geometry relaxation of the structure using
         the pw.x code found in the Quantum Espresso package.
@@ -140,13 +142,15 @@ class Hybrid(AtomCollection, ABC):
                     components) used to generate k-points according to the
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
         """
-        super().write_pw_input(file_name, pseudopotentials, pwargs, ucell = False, **kwargs)
+        super().write_pw_input(
+            file_name, pseudopotentials, pwargs, ucell=False, **kwargs
+        )
 
     @abstractmethod
     def _begin_handler(self, obj, method, method_args, **kwargs):
         """
-        To be implemented in a derived hybrid structure, this method will typically 
-        be used to check whether a specific operation performed by an object belonging 
+        To be implemented in a derived hybrid structure, this method will typically
+        be used to check whether a specific operation performed by an object belonging
         to the hybrid object is permitted or not.
 
         """
@@ -155,18 +159,18 @@ class Hybrid(AtomCollection, ABC):
     @abstractmethod
     def _end_handler(self, obj, method, method_args, **kwargs):
         """
-        To be implemented in a derived hybrid structure, this method will typically 
-        be used to adjust the result of some operation performed by an object that 
+        To be implemented in a derived hybrid structure, this method will typically
+        be used to adjust the result of some operation performed by an object that
         belongs to the hybrid object.
 
         """
         pass
-    
+
     @abstractmethod
     def _update(self, obj, **kwargs):
         """
-        To be implemented in a derived hybrid structure, this method updates 
-        attributes of the hybrid object when an object that belongs to it undergoes 
+        To be implemented in a derived hybrid structure, this method updates
+        attributes of the hybrid object when an object that belongs to it undergoes
         changes in its own attributes.
 
         """

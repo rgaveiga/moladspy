@@ -84,7 +84,7 @@ class Slab(AtomCollection):
             raise SlabError("'file_type' must be 'XYZ'!")
 
         self._ads_sites = {}  # Dictionary of adsorption sites
-        
+
         self._update(**kwargs)
 
     @dispatch(str, list, float, (ndarray, list, tuple), vaccuum=(int, float))
@@ -137,7 +137,7 @@ class Slab(AtomCollection):
             )
 
         self._get_from_atom_list(atom_list, **kwargs)
-        
+
         self._ads_sites = {}  # Dictionary of adsorption sites
 
         self._update(**kwargs)
@@ -207,9 +207,7 @@ class Slab(AtomCollection):
             vector.
 
         """
-        l = 0
-
-        super().resize(n, m, l, **kwargs)
+        super().resize(n, m, l=0, **kwargs)
 
     def write_xyz(self, file_name="slab.xyz", **kwargs):
         """
@@ -224,7 +222,9 @@ class Slab(AtomCollection):
         """
         super().write_xyz(file_name, **kwargs)
 
-    def write_pw_input(self, file_name="slab.in", pseudopotentials={}, pwargs={}, **kwargs):
+    def write_pw_input(
+        self, file_name="slab.in", pseudopotentials={}, pwargs={}, **kwargs
+    ):
         """
         Creates a basic input file for geometry relaxation of the slab using the
         pw.x code found in the Quantum Espresso package.

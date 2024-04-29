@@ -80,8 +80,8 @@ class AtomCollection(ABC):
             Location of the atom in the supercell. The default is (0,0,0).
 
         """
-        update=kwargs.get("update", True)
-        
+        update = kwargs.get("update", True)
+
         if atomid >= 0 and atomid < Atom._curratomid:
             for atom in Atom._instances:
                 if atomid == atom._id and atom._belongs_to is None:
@@ -95,7 +95,7 @@ class AtomCollection(ABC):
                     if not atom._symbol in self._species:
                         self._species.append(atom._symbol)
 
-                    self._update() if update else None
+                    self._update(**kwargs) if update else None
 
                     break
                 else:
@@ -122,8 +122,8 @@ class AtomCollection(ABC):
             Location of the atom in the supercell. The default is (0,0,0).
 
         """
-        update=kwargs.get("update", True)
-        
+        update = kwargs.get("update", True)
+
         if atom._belongs_to is None:
             self._atoms.append(atom)
             atom._belongs_to = self
@@ -135,7 +135,7 @@ class AtomCollection(ABC):
             if not atom._symbol in self._species:
                 self._species.append(atom._symbol)
 
-            self._update() if update else None
+            self._update(**kwargs) if update else None
         else:
             raise AtomCollectionError("Atom already belongs to another structure!")
 
@@ -150,8 +150,8 @@ class AtomCollection(ABC):
             ID of the atom to be removed from the structure.
 
         """
-        update=kwargs.get("update", True)
-        
+        update = kwargs.get("update", True)
+
         if atomid >= 0 and atomid < Atom._curratomid:
             for atom in self._atoms:
                 if atom._id == atomid:
@@ -162,7 +162,7 @@ class AtomCollection(ABC):
 
                     self._loc.pop(atom._id)
 
-                    self._update() if update else None
+                    self._update(**kwargs) if update else None
 
                     atom._belongs_to = None
 
@@ -191,8 +191,8 @@ class AtomCollection(ABC):
             Atom to be removed from the structure.
 
         """
-        update=kwargs.get("update", True)
-        
+        update = kwargs.get("update", True)
+
         if atom in self._atoms:
             self._atoms.remove(atom)
 
@@ -201,7 +201,7 @@ class AtomCollection(ABC):
 
             self._loc.pop(atom._id)
 
-            self._update() if update else None
+            self._update(**kwargs) if update else None
 
             atom._belongs_to = None
 
@@ -223,7 +223,7 @@ class AtomCollection(ABC):
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
 
-        """        
+        """
         if isinstance(disp, (list, tuple)):
             disp = array(disp)
 
@@ -291,8 +291,8 @@ class AtomCollection(ABC):
             Name of the XYZ file. The default is "coords.xyz".
 
         """
-        ucell=kwargs.get("ucell", False)
-        
+        ucell = kwargs.get("ucell", False)
+
         if not (isinstance(file_name, str) and len(file_name) > 0):
             raise AtomCollectionError("'file_name' must be a non-empty string!")
 
@@ -337,7 +337,8 @@ class AtomCollection(ABC):
             f.write(atompos)
 
     def write_pw_input(
-        self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs):
+        self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs
+    ):
         """
         Creates a basic input file for geometry relaxation of the structure using
         the pw.x code found in the Quantum Espresso package.
@@ -397,271 +398,322 @@ class AtomCollection(ABC):
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
 
         """
-        ucell=kwargs.get("ucell", False)
-        
-        if not (isinstance(file_name,str) and len(file_name)>0):
-           raise AtomCollectionError("'file_name' must be a non-empty string!")
-           
-        ang2bohr=1.889726
-        natoms=0
-        inpstr=""
-        atompos=""
-        n=self._n+1 if not ucell else 1
-        m=self._m+1 if not ucell else 1
-        l=self._l+1 if not ucell else 1
-        
+        ucell = kwargs.get("ucell", False)
+
+        if not (isinstance(file_name, str) and len(file_name) > 0):
+            raise AtomCollectionError("'file_name' must be a non-empty string!")
+
+        ang2bohr = 1.889726
+        natoms = 0
+        inpstr = ""
+        atompos = ""
+        n = self._n + 1 if not ucell else 1
+        m = self._m + 1 if not ucell else 1
+        l = self._l + 1 if not ucell else 1
+
         for atom in self._atoms:
-            i,j,k=self._loc[atom._id]
-            
-            if atom._active and i<n and j<m and k<l:
+            i, j, k = self._loc[atom._id]
+
+            if atom._active and i < n and j < m and k < l:
                 if not ucell or atom in self._ucell:
-                    natoms+=1
-                    atompos+="%s %.6f %.6f %.6f %d %d %d\n" % (atom._symbol,
-                                                               atom._x[0],
-                                                               atom._x[1],
-                                                               atom._x[2],
-                                                               int(not(atom._fixed[0])),
-                                                               int(not(atom._fixed[1])),
-                                                               int(not(atom._fixed[2])))
-                
-        if natoms==0:
+                    natoms += 1
+                    atompos += "%s %.6f %.6f %.6f %d %d %d\n" % (
+                        atom._symbol,
+                        atom._x[0],
+                        atom._x[1],
+                        atom._x[2],
+                        int(not (atom._fixed[0])),
+                        int(not (atom._fixed[1])),
+                        int(not (atom._fixed[2])),
+                    )
+
+        if natoms == 0:
             raise AtomCollectionError("There is no active atom! Nothing to do!")
-        
-        inpstr="&CONTROL\n"
-        
-        if "calculation" in pwargs:            
-            if pwargs["calculation"] in ("relax","vc-relax"):
-                calculation=pwargs["calculation"]                
-                inpstr+="    calculation='%s',\n" % pwargs["calculation"]
+
+        inpstr = "&CONTROL\n"
+
+        if "calculation" in pwargs:
+            if pwargs["calculation"] in ("relax", "vc-relax"):
+                calculation = pwargs["calculation"]
+                inpstr += "    calculation='%s',\n" % pwargs["calculation"]
             else:
-                raise AtomCollectionError("Only 'relax' and 'vc-relax' calculations are allowed!")
+                raise AtomCollectionError(
+                    "Only 'relax' and 'vc-relax' calculations are allowed!"
+                )
         else:
-            calculation="relax"
-            inpstr+="    calculation='relax',\n"
-            
-        inpstr+="    restart_mode='from_scratch',\n"
-        inpstr+="    pseudo_dir='.',\n"
-        inpstr+="    prefix='%s',\n" % (os.path.splitext
-                                        (os.path.basename(file_name))[0])
-        inpstr+="    nstep=500,\n/\n"
-        inpstr+="&SYSTEM\n"
-        
-        if "ibrav" in pwargs and pwargs["ibrav"]!=0:
-            ibrav=int(pwargs["ibrav"])
-            inpstr+="    ibrav=%d,\n" % int(pwargs["ibrav"])
-            celldm1=sqrt(self._latvec[0].dot(self._latvec[0]))*n
-            inpstr+="    celldm(1)=%.6f,\n" % (self._a0*ang2bohr*celldm1)
-            
-            if pwargs["ibrav"] in (4,6):
-                celldm3=sqrt(self._latvec[2].dot(self._latvec[2]))*l/celldm1
-                inpstr+="    celldm(3)=%.6f,\n" % celldm3
-            elif pwargs["ibrav"]==7:
+            calculation = "relax"
+            inpstr += "    calculation='relax',\n"
+
+        inpstr += "    restart_mode='from_scratch',\n"
+        inpstr += "    pseudo_dir='.',\n"
+        inpstr += "    prefix='%s',\n" % (
+            os.path.splitext(os.path.basename(file_name))[0]
+        )
+        inpstr += "    nstep=500,\n/\n"
+        inpstr += "&SYSTEM\n"
+
+        if "ibrav" in pwargs and pwargs["ibrav"] != 0:
+            ibrav = int(pwargs["ibrav"])
+            inpstr += "    ibrav=%d,\n" % int(pwargs["ibrav"])
+            celldm1 = sqrt(self._latvec[0].dot(self._latvec[0])) * n
+            inpstr += "    celldm(1)=%.6f,\n" % (self._a0 * ang2bohr * celldm1)
+
+            if pwargs["ibrav"] in (4, 6):
+                celldm3 = sqrt(self._latvec[2].dot(self._latvec[2])) * l / celldm1
+                inpstr += "    celldm(3)=%.6f,\n" % celldm3
+            elif pwargs["ibrav"] == 7:
                 if "celldm(3)" in pwargs:
-                    inpstr+="    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
                 else:
                     raise AtomCollectionError("'celldm(3)' must be provided!")
-            elif pwargs["ibrav"] in (-5,5):
+            elif pwargs["ibrav"] in (-5, 5):
                 if "celldm(4)" in pwargs:
-                    inpstr+="    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
                 else:
                     raise AtomCollectionError("'celldm(4)' must be provided!")
-            elif pwargs["ibrav"]==8:
-                celldm2=sqrt(self._latvec[1].dot(self._latvec[1]))*m/celldm1
-                celldm3=sqrt(self._latvec[2].dot(self._latvec[2]))*l/celldm1
-                inpstr+="    celldm(2)=%.6f,\n" % celldm2
-                inpstr+="    celldm(3)=%.6f,\n" % celldm3                
-            elif pwargs["ibrav"] in (-9,9,10,11,91):
-                if all(key in pwargs for key in ("celldm(2)","celldm(3)")):
-                    inpstr+="    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
-                    inpstr+="    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+            elif pwargs["ibrav"] == 8:
+                celldm2 = sqrt(self._latvec[1].dot(self._latvec[1])) * m / celldm1
+                celldm3 = sqrt(self._latvec[2].dot(self._latvec[2])) * l / celldm1
+                inpstr += "    celldm(2)=%.6f,\n" % celldm2
+                inpstr += "    celldm(3)=%.6f,\n" % celldm3
+            elif pwargs["ibrav"] in (-9, 9, 10, 11, 91):
+                if all(key in pwargs for key in ("celldm(2)", "celldm(3)")):
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
                 else:
-                    raise AtomCollectionError("'celldm(2)' and 'celldm(3)' must be provided!")
-            elif pwargs["ibrav"] in (12,13):
-                if all(key in pwargs for key in ("celldm(2)","celldm(3)","celldm(4)")):
-                    inpstr+="    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
-                    inpstr+="    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
-                    inpstr+="    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
+                    raise AtomCollectionError(
+                        "'celldm(2)' and 'celldm(3)' must be provided!"
+                    )
+            elif pwargs["ibrav"] in (12, 13):
+                if all(
+                    key in pwargs for key in ("celldm(2)", "celldm(3)", "celldm(4)")
+                ):
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
                 else:
-                    raise AtomCollectionError("'celldm(2)', 'celldm(3)' and 'celldm(4)' must be provided!")
-            elif pwargs["ibrav"] in (-13,-12):
-                if all(key in pwargs for key in ("celldm(2)","celldm(3)","celldm(5)")):
-                    inpstr+="    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
-                    inpstr+="    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
-                    inpstr+="    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
+                    raise AtomCollectionError(
+                        "'celldm(2)', 'celldm(3)' and 'celldm(4)' must be provided!"
+                    )
+            elif pwargs["ibrav"] in (-13, -12):
+                if all(
+                    key in pwargs for key in ("celldm(2)", "celldm(3)", "celldm(5)")
+                ):
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
                 else:
-                    raise AtomCollectionError("'celldm(2)', 'celldm(3)' and 'celldm(5)' must be provided!")
-            elif pwargs["ibrav"]==14:
-                if all(key in pwargs for key in ("celldm(2)","celldm(3)","celldm(4)",
-                                                 "celldm(5)","celldm(6)")):
-                    inpstr+="    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
-                    inpstr+="    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
-                    inpstr+="    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
-                    inpstr+="    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
-                    inpstr+="    celldm(6)=%.6f,\n" % pwargs["celldm(6)"]
+                    raise AtomCollectionError(
+                        "'celldm(2)', 'celldm(3)' and 'celldm(5)' must be provided!"
+                    )
+            elif pwargs["ibrav"] == 14:
+                if all(
+                    key in pwargs
+                    for key in (
+                        "celldm(2)",
+                        "celldm(3)",
+                        "celldm(4)",
+                        "celldm(5)",
+                        "celldm(6)",
+                    )
+                ):
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
+                    inpstr += "    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
+                    inpstr += "    celldm(6)=%.6f,\n" % pwargs["celldm(6)"]
                 else:
-                    raise AtomCollectionError("'celldm(2)', 'celldm(3)', 'celldm(4)', 'celldm(5)' and 'celldm(6)' must be provided!")
+                    raise AtomCollectionError(
+                        "'celldm(2)', 'celldm(3)', 'celldm(4)', 'celldm(5)' and 'celldm(6)' must be provided!"
+                    )
         else:
-            ibrav=0
-            inpstr+="    ibrav=0,\n"
-            inpstr+="    celldm(1)=%.6f,\n" % (self._a0*ang2bohr)
-            
-        inpstr+="    nat=%d,\n" % natoms
-        inpstr+="    ntyp=%d,\n" % (len(self._species))
-        
+            ibrav = 0
+            inpstr += "    ibrav=0,\n"
+            inpstr += "    celldm(1)=%.6f,\n" % (self._a0 * ang2bohr)
+
+        inpstr += "    nat=%d,\n" % natoms
+        inpstr += "    ntyp=%d,\n" % (len(self._species))
+
         if "ecutwfc" in pwargs:
-            inpstr+="    ecutwfc=%.2f,\n" % pwargs["ecutwfc"]
+            inpstr += "    ecutwfc=%.2f,\n" % pwargs["ecutwfc"]
         else:
-            inpstr+="    ecutwfc=32.00,\n"
-        
+            inpstr += "    ecutwfc=32.00,\n"
+
         if "ecutrho" in pwargs:
-            inpstr+="    ecutrho=%.2f,\n" % pwargs["ecutrho"]
+            inpstr += "    ecutrho=%.2f,\n" % pwargs["ecutrho"]
         else:
-            inpstr+="    ecutrho=128.00,\n"
-            
+            inpstr += "    ecutrho=128.00,\n"
+
         if "occupations" in pwargs:
-            inpstr+="    occupations='%s',\n" % pwargs["occupations"]
-            
-            if pwargs["occupations"]=="smearing":
+            inpstr += "    occupations='%s',\n" % pwargs["occupations"]
+
+            if pwargs["occupations"] == "smearing":
                 if "smearing" in pwargs:
-                    inpstr+="    smearing='%s',\n" % pwargs["smearing"]
+                    inpstr += "    smearing='%s',\n" % pwargs["smearing"]
                 else:
-                    inpstr+="    smearing='gaussian',\n"
-                    
+                    inpstr += "    smearing='gaussian',\n"
+
                 if "degauss" in pwargs:
-                    inpstr+="    degauss=%.4f,\n" % pwargs["degauss"]
+                    inpstr += "    degauss=%.4f,\n" % pwargs["degauss"]
                 else:
-                    inpstr+="    degauss=0.02,\n"
+                    inpstr += "    degauss=0.02,\n"
         else:
-            inpstr+="    occupations='fixed',\n"
-            
-        if "nspin" in pwargs and pwargs["nspin"]==2:
-            inpstr+="    nspin=2,\n"
-                
-            if "starting_magnetization" in pwargs and \
-                len(pwargs["starting_magnetization"])>0:
-                    for i in range(len(pwargs["starting_magnetization"])):
-                        if i<len(self._species):                           
-                            inpstr+="    starting_magnetization(%d)=%.2f,\n" \
-                                % (i+1,pwargs["starting_magnetization"][i])
-                        else:
-                            break
+            inpstr += "    occupations='fixed',\n"
+
+        if "nspin" in pwargs and pwargs["nspin"] == 2:
+            inpstr += "    nspin=2,\n"
+
+            if (
+                "starting_magnetization" in pwargs
+                and len(pwargs["starting_magnetization"]) > 0
+            ):
+                for i in range(len(pwargs["starting_magnetization"])):
+                    if i < len(self._species):
+                        inpstr += "    starting_magnetization(%d)=%.2f,\n" % (
+                            i + 1,
+                            pwargs["starting_magnetization"][i],
+                        )
+                    else:
+                        break
             else:
-                inpstr+="    starting_magnetization(1)=1.00,\n"
+                inpstr += "    starting_magnetization(1)=1.00,\n"
         else:
-            inpstr+="    nspin=1,\n"
-            
-        if "input_dft" in pwargs and pwargs["input_dft"]=="vdw-df":
-            inpstr+="    input_dft='vdw-df',\n"
-        
-        inpstr+="/\n"
-        inpstr+="&ELECTRONS\n"
-        
+            inpstr += "    nspin=1,\n"
+
+        if "input_dft" in pwargs and pwargs["input_dft"] == "vdw-df":
+            inpstr += "    input_dft='vdw-df',\n"
+
+        inpstr += "/\n"
+        inpstr += "&ELECTRONS\n"
+
         if "mixing_mode" in pwargs:
-            inpstr+="    mixing_mode='%s',\n" % pwargs["mixing_mode"]
+            inpstr += "    mixing_mode='%s',\n" % pwargs["mixing_mode"]
         else:
-            inpstr+="    mixing_mode='plain',\n"
-            
-        if "mixing_beta" in pwargs and pwargs["mixing_beta"]>0.0:
-            inpstr+="    mixing_beta=%.2f,\n" % pwargs["mixing_beta"]
-        else:
-            inpstr+="    mixing_beta=0.7,\n"
-        
-        inpstr+="    electron_maxstep=200,\n/\n"
-        inpstr+="&IONS\n/\n"
-        
-        if calculation=="vc-relax":
-            inpstr+="&CELL\n/\n"
-        
-        if ibrav==0:
-            inpstr+="CELL_PARAMETERS alat\n"
-            inpstr+="%.4f   %.4f   %4f\n" % (n*self._latvec[0][0],
-                                             n*self._latvec[0][1],
-                                             n*self._latvec[0][2])
-            inpstr+="%.4f   %.4f   %4f\n" % (m*self._latvec[1][0],
-                                             m*self._latvec[1][1],
-                                             m*self._latvec[1][2])
-            inpstr+="%.4f   %.4f   %4f\n" % (l*self._latvec[2][0],
-                                             l*self._latvec[2][1],
-                                             l*self._latvec[2][2])
+            inpstr += "    mixing_mode='plain',\n"
 
-        inpstr+="K_POINTS automatic\n"
-
-        if "kvec" in pwargs and len(pwargs["kvec"])==6:
-            inpstr+="%d %d %d %d %d %d\n" % (pwargs["kvec"][0],
-                                             pwargs["kvec"][1],
-                                             pwargs["kvec"][2],
-                                             pwargs["kvec"][3],
-                                             pwargs["kvec"][4],
-                                             pwargs["kvec"][5])
+        if "mixing_beta" in pwargs and pwargs["mixing_beta"] > 0.0:
+            inpstr += "    mixing_beta=%.2f,\n" % pwargs["mixing_beta"]
         else:
-            inpstr+="1 1 1 0 0 0\n"
-        
-        inpstr+="ATOMIC_SPECIES\n"
-        
+            inpstr += "    mixing_beta=0.7,\n"
+
+        inpstr += "    electron_maxstep=200,\n/\n"
+        inpstr += "&IONS\n/\n"
+
+        if calculation == "vc-relax":
+            inpstr += "&CELL\n/\n"
+
+        if ibrav == 0:
+            inpstr += "CELL_PARAMETERS alat\n"
+            inpstr += "%.4f   %.4f   %4f\n" % (
+                n * self._latvec[0][0],
+                n * self._latvec[0][1],
+                n * self._latvec[0][2],
+            )
+            inpstr += "%.4f   %.4f   %4f\n" % (
+                m * self._latvec[1][0],
+                m * self._latvec[1][1],
+                m * self._latvec[1][2],
+            )
+            inpstr += "%.4f   %.4f   %4f\n" % (
+                l * self._latvec[2][0],
+                l * self._latvec[2][1],
+                l * self._latvec[2][2],
+            )
+
+        inpstr += "K_POINTS automatic\n"
+
+        if "kvec" in pwargs and len(pwargs["kvec"]) == 6:
+            inpstr += "%d %d %d %d %d %d\n" % (
+                pwargs["kvec"][0],
+                pwargs["kvec"][1],
+                pwargs["kvec"][2],
+                pwargs["kvec"][3],
+                pwargs["kvec"][4],
+                pwargs["kvec"][5],
+            )
+        else:
+            inpstr += "1 1 1 0 0 0\n"
+
+        inpstr += "ATOMIC_SPECIES\n"
+
         for symbol in self._species:
             if symbol in pseudopotentials:
-                pseudopotential=pseudopotentials[symbol]
+                pseudopotential = pseudopotentials[symbol]
             else:
-                pseudopotential=symbol+".UPF"
-                
-            inpstr+="%s %.4f %s\n" % (symbol,Species[symbol]["atomic mass"],
-                                      pseudopotential)
-                
-        inpstr+="ATOMIC_POSITIONS angstrom\n"
-        inpstr+=atompos
-            
-        with open(file_name,"w") as f:
+                pseudopotential = symbol + ".UPF"
+
+            inpstr += "%s %.4f %s\n" % (
+                symbol,
+                Species[symbol]["atomic mass"],
+                pseudopotential,
+            )
+
+        inpstr += "ATOMIC_POSITIONS angstrom\n"
+        inpstr += atompos
+
+        with open(file_name, "w") as f:
             f.write(inpstr)
 
     @apply_owner_handlers
-    def resize(self, n, m , l, **kwargs):
-        '''
+    def resize(self, n, m, l, **kwargs):
+        """
         Resizes the atom collection structure.
 
         Parameters
         ----------
         n : integer
-            Number of repetitions of the structure's unit cell along the first 
+            Number of repetitions of the structure's unit cell along the first
             lattice vector.
         m : integer
-            Number of repetitions of the structure's unit cell along the second 
+            Number of repetitions of the structure's unit cell along the second
             lattice vector.
         l : integer
-            Number of repetitions of the structure's unit cell along the third 
+            Number of repetitions of the structure's unit cell along the third
             lattice vector.
-        '''
-        if not (isinstance(n,int) and isinstance(m,int) and isinstance (l,int)
-                and n>=0 and m>=0 and l>=0):
-            raise AtomCollectionError("'n', 'm' and 'l' values must be integers greater than or equal to zero!")            
-        elif n==self._n and m==self._m and l==self._l:
+        """
+        if not (
+            isinstance(n, int)
+            and isinstance(m, int)
+            and isinstance(l, int)
+            and n >= 0
+            and m >= 0
+            and l >= 0
+        ):
+            raise AtomCollectionError(
+                "'n', 'm' and 'l' values must be integers greater than or equal to zero!"
+            )
+        elif n == self._n and m == self._m and l == self._l:
             raise AtomCollectionError("The current structure size was not changed!")
-        elif n>self._maxn or m>self._maxm or l>self._maxl:
-            print("WARNING: Atoms newly created will not be removed if the supercell is subsequently reduced!")
-                         
-            for i in range(n+1):
-                for j in range(m+1):
-                    for k in range(l+1):
-                        if i<=self._maxn and j<=self._maxm and k<=self._maxl:
+        elif n > self._maxn or m > self._maxm or l > self._maxl:
+            if self._verbose:
+                print(
+                    "WARNING: Atoms newly created will not be removed if the supercell is subsequently reduced!"
+                )
+
+            for i in range(n + 1):
+                for j in range(m + 1):
+                    for k in range(l + 1):
+                        if i <= self._maxn and j <= self._maxm and k <= self._maxl:
                             continue
-                        
-                        disp=dot(self._a0*array([i,j,k]),self._latvec)
-                        
+
+                        disp = dot(self._a0 * array([i, j, k]), self._latvec)
+
                         for atom in self._ucell:
-                            newatom=atom.copy()
-                            newatom._belongs_to=self                            
-                            newatom._x+=disp
-                            self._loc[newatom._id]=(i,j,k)
-                            
+                            newatom = atom.copy()
+                            newatom._belongs_to = self
+                            newatom._x += disp
+                            self._loc[newatom._id] = (i, j, k)
+
                             self._atoms.append(newatom)
-            
-            self._maxn=max([self._maxn,n])
-            self._maxm=max([self._maxm,m])
-            self._maxl=max([self._maxl,l])
-                
-        self._n=n
-        self._m=m
-        self._l=l
-        
+
+            self._maxn = max([self._maxn, n])
+            self._maxm = max([self._maxm, m])
+            self._maxl = max([self._maxl, l])
+
+        self._n = n
+        self._m = m
+        self._l = l
+
         self._update(**kwargs)
 
     def copy(self):
@@ -707,57 +759,71 @@ class AtomCollection(ABC):
         filename : string
             Name of the XYZ file.
 
-        """        
-        if not (isinstance(file_name,str) and len(file_name)>0):
-            raise AtomCollectionError("'file_name' must be a valid file name!")        
-        
-        with open(file_name,"r") as f:
-            lines=f.readlines()
-            
-        count=0
-        extxyz=-1
+        """
+        if not (isinstance(file_name, str) and len(file_name) > 0):
+            raise AtomCollectionError("'file_name' must be a valid file name!")
+
+        with open(file_name, "r") as f:
+            lines = f.readlines()
+
+        count = 0
+        extxyz = -1
 
         for line in lines:
-            if count==0:
-                count=1
-                
+            if count == 0:
+                count = 1
+
                 continue
-            elif count==1:
-                extxyz=line.find("Lattice")
-                
-                if extxyz>=0:
-                    line=line.replace('Lattice','')
-                    line=line.replace('=','')
-                    line=line.replace('"','')
-                    line=line.replace("'","")
-                    l=line.split()
-                    self._latvec=array([[float(l[0]),float(l[1]),float(l[2])],
-                                        [float(l[3]),float(l[4]),float(l[5])],
-                                        [float(l[6]),float(l[7]),float(l[8])]])
+            elif count == 1:
+                extxyz = line.find("Lattice")
+
+                if extxyz >= 0:
+                    line = line.replace("Lattice", "")
+                    line = line.replace("=", "")
+                    line = line.replace('"', "")
+                    line = line.replace("'", "")
+                    l = line.split()
+                    self._latvec = array(
+                        [
+                            [float(l[0]), float(l[1]), float(l[2])],
+                            [float(l[3]), float(l[4]), float(l[5])],
+                            [float(l[6]), float(l[7]), float(l[8])],
+                        ]
+                    )
                 else:
                     if self._verbose:
                         print("WARNING: Lattice vectors not found in the XYZ file!")
-                    
-                count=2
-                    
+
+                count = 2
+
                 continue
-                
-            l=line.split()
-        
-            if len(l)>=4:
+
+            l = line.split()
+
+            if len(l) >= 4:
                 if l[0] in Species:
-                    self.add_atom(Atom(l[0],x=array([float(l[1]),float(l[2]),
-                                                     float(l[3])])),loc=(0,0,0),
-                                  update=False, **kwargs)
-                else:                    
-                    print("WARNING: Species '%s' and atoms of this species must be added manually!" % l[0])                              
-                    
-        print("INFO: %d Atom objects have just been created from file '%s'!" 
-              % (len(self._atoms),file_name))
+                    self.add_atom(
+                        Atom(l[0], x=array([float(l[1]), float(l[2]), float(l[3])])),
+                        loc=(0, 0, 0),
+                        update=False,
+                        **kwargs
+                    )
+                else:
+                    if self._verbose:
+                        print(
+                            "WARNING: Species '%s' and atoms of this species must be added manually!"
+                            % l[0]
+                        )
+
+        if self._verbose:
+            print(
+                "INFO: %d Atom objects have just been created from file '%s'!"
+                % (len(self._atoms), file_name)
+            )
 
     def _get_from_atom_list(self, atom_list, **kwargs):
         """
-        Gets the atomic coordinates of the unit cell from a list of Atom objects 
+        Gets the atomic coordinates of the unit cell from a list of Atom objects
         or atom IDs.
 
         Parameters
@@ -765,7 +831,7 @@ class AtomCollection(ABC):
         atom_list : Python list
             List of Atom objects or atom IDs to be added to the atom collection.
 
-        """        
+        """
         if len(atom_list) > 0:
             for atom in atom_list:
                 if isinstance(atom, (Atom, int)):
@@ -1023,9 +1089,10 @@ class AtomCollection(ABC):
     @a0.setter
     def a0(self, val):
         if isinstance(val, (float, int)) and val > 0.0:
-            print(
-                "WARNING: Changing the lattice parameter rescales the atomic coordinates accordingly!"
-            )
+            if self._verbose:
+                print(
+                    "WARNING: Changing the lattice parameter rescales the atomic coordinates accordingly!"
+                )
 
             old, self._a0 = self._a0, val
             fac = val / old
@@ -1065,7 +1132,8 @@ class AtomCollection(ABC):
             val = array(val)
 
         if isinstance(val, ndarray) and val.shape[0] == 3:
-            print("WARNING: Moving the origin displaces all atoms accordingly!")
+            if self._verbose:
+                print("WARNING: Moving the origin displaces all atoms accordingly!")
 
             disp = val - self._origin
             self._origin = val.astype(float)
