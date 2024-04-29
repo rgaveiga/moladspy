@@ -49,7 +49,7 @@ class Hybrid(AtomCollection, ABC):
         type(self)._append(self)
 
     @abstractmethod
-    def add_component(self, *args):
+    def add_component(self, *args, **kwargs):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to add atom collection objects to the hybrid system.
@@ -58,7 +58,7 @@ class Hybrid(AtomCollection, ABC):
         pass
 
     @abstractmethod
-    def remove_component(self, *args):
+    def remove_component(self, *args, **kwargs):
         """
         To be implemented in a derived hybrid structure, this method is expected
         to remove an atom collection object from the hybrid system.
@@ -66,37 +66,7 @@ class Hybrid(AtomCollection, ABC):
         """
         pass
 
-    @abstractmethod
-    def beginHandler(self, obj, method, **kwargs):
-        # TODO: rename to begin_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
-        """
-        To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconstruct itself when an object is realigned
-        inside it.
-        """
-        pass
-
-    @abstractmethod
-    def endHandler(self, obj, method, **kwargs):
-        # TODO: rename to end_handler to follow PEP 8: https://realpython.com/python-pep8/#naming-styles
-        """
-        To be implemented in a derived hybrid structure, this method is expected
-        to make the hybrid structure reconstruct itself when an object is realigned
-        inside it.
-
-        """
-        pass
-
-    def force_update(self):
-        # TODO: remove this, I think there is no situation where it will be required
-        """
-        Forces the hybrid system's attributes to be updated if there is a change
-        in the attributes of any of its components.
-
-        """
-        self._update()
-
-    def write_xyz(self, file_name="coords.xyz"):
+    def write_xyz(self, file_name="coords.xyz", **kwargs):
         """
         Saves the atomic coordinates of the hybrid system into an XYZ file.
 
@@ -106,9 +76,9 @@ class Hybrid(AtomCollection, ABC):
             Name of the XYZ file. The default is "coords.xyz".
 
         """
-        super().write_xyz(file_name, ucell=False)
+        super().write_xyz(file_name, ucell=False, **kwargs)
 
-    def write_pw_input(self, file_name="pw.in", pseudopotentials={}, pwargs={}):
+    def write_pw_input(self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs):
         """
         Creates a basic input file for geometry relaxation of the structure using
         the pw.x code found in the Quantum Espresso package.
@@ -170,9 +140,37 @@ class Hybrid(AtomCollection, ABC):
                     components) used to generate k-points according to the
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
         """
-        ucell = False
+        super().write_pw_input(file_name, pseudopotentials, pwargs, ucell = False, **kwargs)
 
-        super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
+    @abstractmethod
+    def _begin_handler(self, obj, method, method_args, **kwargs):
+        """
+        To be implemented in a derived hybrid structure, this method will typically 
+        be used to check whether a specific operation performed by an object belonging 
+        to the hybrid object is permitted or not.
+
+        """
+        pass
+
+    @abstractmethod
+    def _end_handler(self, obj, method, method_args, **kwargs):
+        """
+        To be implemented in a derived hybrid structure, this method will typically 
+        be used to adjust the result of some operation performed by an object that 
+        belongs to the hybrid object.
+
+        """
+        pass
+    
+    @abstractmethod
+    def _update(self, obj, **kwargs):
+        """
+        To be implemented in a derived hybrid structure, this method updates 
+        attributes of the hybrid object when an object that belongs to it undergoes 
+        changes in its own attributes.
+
+        """
+        pass
 
     def copy(self):
         """
@@ -181,35 +179,35 @@ class Hybrid(AtomCollection, ABC):
         """
         raise HybridError("Not implemented for hybrid objects!")
 
-    def add_atom(self, *args):
+    def add_atom(self, *args, **kwargs):
         """
         This method is disabled for hybrid objects and issues an error message.
 
         """
         raise HybridError("Not implemented for hybrid objects!")
 
-    def remove_atom(self, *args):
+    def remove_atom(self, *args, **kwargs):
         """
         This method is disabled for hybrid objects and issues an error message.
 
         """
         raise HybridError("Not implemented for hybrid objects!")
 
-    def location(self, *args):
+    def location(self, *args, **kwargs):
         """
         This method is disabled for hybrid objects and issues an error message.
 
         """
         raise HybridError("Not implemented for hybrid objects!")
 
-    def _read_xyz(self, *args):
+    def _read_xyz(self, *args, **kwargs):
         """
         This method is disabled for hybrid objects and issues an error message.
 
         """
         raise HybridError("Not implemented for hybrid objects!")
 
-    def __setitem__(self, *args):
+    def __setitem__(self, *args, **kwargs):
         """
         This method is disabled for hybrid objects and issues an error message.
 

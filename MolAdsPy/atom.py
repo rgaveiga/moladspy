@@ -71,7 +71,7 @@ class Atom:
 
         type(self)._append(self)
 
-    def displace(self, disp):
+    def displace(self, disp, **kwargs):
         """
         Displaces the atom.
 
@@ -89,7 +89,7 @@ class Atom:
             self._x += disp.astype(float)
 
             if self._belongs_to is not None:
-                self._belongs_to._update()
+                self._belongs_to._update(**kwargs)
         else:
             raise AtomError("'disp' must be an array with three components!")
 
@@ -173,8 +173,7 @@ class Atom:
     belongs_to : AtomCollection-derived object, readonly
         Structure to which the AtomCollection object belongs.
     ID : integer, readonly
-        Unique atom identifier.
-        
+        Unique atom identifier.       
     """
 
     @property

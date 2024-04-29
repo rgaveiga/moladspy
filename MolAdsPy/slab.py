@@ -1,7 +1,7 @@
 from __future__ import print_function
 from ._atomcollection import AtomCollection
+from ._utils import update_owner_attributes
 from ._exception import BasicException
-from .atom import Atom
 from numpy import array, ndarray, min, max
 from copy import deepcopy
 from multipledispatch import dispatch
@@ -84,6 +84,8 @@ class Slab(AtomCollection):
             raise SlabError("'file_type' must be 'XYZ'!")
 
         self._ads_sites = {}  # Dictionary of adsorption sites
+        
+        self._update(**kwargs)
 
     @dispatch(str, list, float, (ndarray, list, tuple), vaccuum=(int, float))
     def __init__(self, label, atom_list, a0, lattice_vectors, vaccuum=10.0, **kwargs):
@@ -134,21 +136,11 @@ class Slab(AtomCollection):
                 "'lattice_vectors' must be a Numpy array with three vectors!"
             )
 
-        if len(atom_list) > 0:
-            for atom in atom_list:
-                if isinstance(atom, (Atom, int)):
-                    self.add_atom(atom, loc=(0, 0, 0), update=False)
-                else:
-                    if self._verbose:
-                        print(
-                            "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
-                        )
-        else:
-            raise SlabError("'atom_list' must be a non-empyt list!")
-
-        self._update()
-
+        self._get_from_atom_list(atom_list, **kwargs)
+        
         self._ads_sites = {}  # Dictionary of adsorption sites
+
+        self._update(**kwargs)
 
     def add_adsorption_site(self, ads_site, pos):
         """
@@ -186,7 +178,7 @@ class Slab(AtomCollection):
         else:
             raise SlabError("'ads_site' is not a valid label for an adsorption site!")
 
-    def displace(self, disp):
+    def displace(self, disp, **kwargs):
         """
         displace(disp) -> rigidly displaces the slab.
 
@@ -196,12 +188,12 @@ class Slab(AtomCollection):
             Displacement vector. It can also be provided as a Python list or tuple.
 
         """
-        super().displace(disp)
+        super().displace(disp, **kwargs)
 
         for key in self._ads_sites.keys():
             self._ads_sites[key] += disp[:2]
 
-    def resize(self, n, m):
+    def resize(self, n, m, **kwargs):
         """
         Resizes the slab in the XY plane.
 
@@ -217,27 +209,22 @@ class Slab(AtomCollection):
         """
         l = 0
 
-        super().resize(n, m, l)
+        super().resize(n, m, l, **kwargs)
 
-    def write_xyz(self, file_name="slab.xyz", ucell=False):
+    def write_xyz(self, file_name="slab.xyz", **kwargs):
         """
-        write_xyz(file_name,ucell) -> saves the atomic coordinates of the slab into an
+        write_xyz(file_name) -> saves the atomic coordinates of the slab into an
             XYZ file.
 
         Parameters
         ----------
         file_name : string, optional
             Name of the XYZ file. The default is "slab.xyz".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
 
         """
-        super().write_xyz(file_name, ucell)
+        super().write_xyz(file_name, **kwargs)
 
-    def write_pw_input(
-        self, file_name="slab.in", ucell=False, pseudopotentials={}, pwargs={}
-    ):
+    def write_pw_input(self, file_name="slab.in", pseudopotentials={}, pwargs={}, **kwargs):
         """
         Creates a basic input file for geometry relaxation of the slab using the
         pw.x code found in the Quantum Espresso package.
@@ -246,9 +233,6 @@ class Slab(AtomCollection):
         ----------
         file_name : string, optional
             Name of the input file. The default is "slab.in".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
         pseudopotentials : Python dictionary, optional
             Specify for each element provided as a key the name of a pseudopotential
             file given as the corresponding value. The default is {}.
@@ -300,7 +284,7 @@ class Slab(AtomCollection):
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
 
         """
-        super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
+        super().write_pw_input(file_name, pseudopotentials, pwargs, **kwargs)
 
     def copy(self):
         """
@@ -317,23 +301,15 @@ class Slab(AtomCollection):
 
         return newslab
 
-    def _update(self):
+    @update_owner_attributes
+    def _update(self, **kwargs):
         """
         _update() -> updates the slab's top and bottom, as well as its origin,
             if an event (e.g., adding a new atom to the slab) changes the atomic
             coordinates.
 
         """
-        valid_coords = array(
-            [
-                atom._x
-                for atom in self._atoms
-                if atom._active
-                and self._loc[atom._id][0] <= self._n
-                and self._loc[atom._id][1] <= self._m
-                and self._loc[atom._id][2] <= self._l
-            ]
-        )
+        valid_coords = array([atom._x for atom in self.active_atoms])
 
         if valid_coords.shape[0] > 0:
             self._origin = min(valid_coords, axis=0)
