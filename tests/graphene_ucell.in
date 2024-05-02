@@ -1,0 +1,37 @@
+&CONTROL
+    calculation='relax',
+    restart_mode='from_scratch',
+    pseudo_dir='.',
+    prefix='graphene_ucell',
+    nstep=500,
+/
+&SYSTEM
+    ibrav=0,
+    celldm(1)=1.889726,
+    nat=4,
+    ntyp=1,
+    ecutwfc=32.00,
+    ecutrho=128.00,
+    occupations='fixed',
+    nspin=1,
+/
+&ELECTRONS
+    mixing_mode='plain',
+    mixing_beta=0.7,
+    electron_maxstep=200,
+/
+&IONS
+/
+CELL_PARAMETERS alat
+2.4600   0.0000   0.000000
+0.0000   4.2610   0.000000
+0.0000   0.0000   16.000000
+K_POINTS automatic
+1 1 1 0 0 0
+ATOMIC_SPECIES
+C 12.0110 C.UPF
+ATOMIC_POSITIONS angstrom
+C 1.230000 0.000000 0.000000 1 1 1
+C 0.000000 0.710141 0.000000 1 1 1
+C 0.000000 2.130423 0.000000 1 1 1
+C 1.230000 2.840563 0.000000 1 1 1

@@ -1,11 +1,11 @@
 from ._exception import BasicException
-from .atom import Atom,Species
+from ._utils import apply_owner_handlers
+from .atom import Atom, Species
 from multipledispatch import dispatch
-from numpy import array,ndarray,dot,sqrt
+from numpy import array, ndarray, dot, sqrt
 from copy import copy
-from abc import ABC,abstractmethod
+from abc import ABC, abstractmethod
 import os.path
-
 
 
 class AtomCollectionError(BasicException):
@@ -32,15 +32,13 @@ class AtomCollection(ABC):
         "_origin",
         "_belongs_to",
         "_label",
+        "_verbose",
     ]
-    #TODO: Check the need of it, since self._verbose is assigned inside __init__() as a boolean
-    _verbose = 1  # Level of verbose during usage of the lib
 
     def __init__(self, **kwargs):
-        #TODO: Check the need for **kwargs here, since it does not change anything.
         """
         Object initialization.
-        
+
         """
         self._label = (
             ""  # Label used as a convenient name of the atom collection object
@@ -69,9 +67,8 @@ class AtomCollection(ABC):
         self._verbose = kwargs.get("verbose", False)
         type(self)._append(self)
 
-    @dispatch(int, loc=(tuple, list), update=bool)
-    def add_atom(self, atomid, loc=(0, 0, 0), update=True):
-        #TODO: update should be replaced by **kwargs
+    @dispatch(int, loc=(tuple, list))
+    def add_atom(self, atomid, loc=(0, 0, 0), **kwargs):
         """
         Adds an atom to the structure.
 
@@ -81,11 +78,10 @@ class AtomCollection(ABC):
             ID of the atom to be added to the structure.
         loc : Python tuple, optional
             Location of the atom in the supercell. The default is (0,0,0).
-        update : logical, optional
-            Whether or not update some structure attributes if atomic coordinates
-            or cell shape or cell size change.
-            
+
         """
+        update = kwargs.get("update", True)
+
         if atomid >= 0 and atomid < Atom._curratomid:
             for atom in Atom._instances:
                 if atomid == atom._id and atom._belongs_to is None:
@@ -99,8 +95,7 @@ class AtomCollection(ABC):
                     if not atom._symbol in self._species:
                         self._species.append(atom._symbol)
 
-                    if update:
-                        self._update()
+                    self._update(**kwargs) if update else None
 
                     break
                 else:
@@ -114,9 +109,8 @@ class AtomCollection(ABC):
                 "'atomid' must be an integer greater than or equal to zero!"
             )
 
-    @dispatch(Atom, loc=(tuple, list), update=bool)
-    def add_atom(self, atom, loc=(0, 0, 0), update=True):
-        #TODO: update should be replaced by **kwargs
+    @dispatch(Atom, loc=(tuple, list))
+    def add_atom(self, atom, loc=(0, 0, 0), **kwargs):
         """
         Adds an atom to the structure.
 
@@ -126,11 +120,10 @@ class AtomCollection(ABC):
             Atom to be added to the structure.
         loc : Python tuple, optional
             Location of the atom in the supercell. The default is (0,0,0).
-        update : logical, optional
-            Whether or not update some structure attributes if atomic coordinates
-            or cell shape or cell size change.
-            
+
         """
+        update = kwargs.get("update", True)
+
         if atom._belongs_to is None:
             self._atoms.append(atom)
             atom._belongs_to = self
@@ -142,14 +135,12 @@ class AtomCollection(ABC):
             if not atom._symbol in self._species:
                 self._species.append(atom._symbol)
 
-            if update:
-                self._update()
+            self._update(**kwargs) if update else None
         else:
             raise AtomCollectionError("Atom already belongs to another structure!")
 
-    @dispatch(int, update=bool)
-    def remove_atom(self, atomid, update=True):
-        #TODO: update should be replaced by **kwargs
+    @dispatch(int)
+    def remove_atom(self, atomid, **kwargs):
         """
         Removes an atom from the structure.
 
@@ -157,11 +148,10 @@ class AtomCollection(ABC):
         ----------
         atomid : integer
             ID of the atom to be removed from the structure.
-        update : logical, optional
-            Whether or not update some structure attributes if atomic coordinates
-            or cell shape or cell size change.
-            
+
         """
+        update = kwargs.get("update", True)
+
         if atomid >= 0 and atomid < Atom._curratomid:
             for atom in self._atoms:
                 if atom._id == atomid:
@@ -172,8 +162,7 @@ class AtomCollection(ABC):
 
                     self._loc.pop(atom._id)
 
-                    if update:
-                        self._update()
+                    self._update(**kwargs) if update else None
 
                     atom._belongs_to = None
 
@@ -191,9 +180,8 @@ class AtomCollection(ABC):
                 "'atomid' must be an integer greater than or equal to zero!"
             )
 
-    @dispatch(Atom, update=bool)
-    def remove_atom(self, atom, update=True):
-        #TODO: update should be replaced by **kwargs
+    @dispatch(Atom)
+    def remove_atom(self, atom, **kwargs):
         """
         Removes an atom from the structure.
 
@@ -201,8 +189,10 @@ class AtomCollection(ABC):
         ----------
         atom : Atom object
             Atom to be removed from the structure.
-            
+
         """
+        update = kwargs.get("update", True)
+
         if atom in self._atoms:
             self._atoms.remove(atom)
 
@@ -211,8 +201,7 @@ class AtomCollection(ABC):
 
             self._loc.pop(atom._id)
 
-            if update:
-                self._update()
+            self._update(**kwargs) if update else None
 
             atom._belongs_to = None
 
@@ -224,7 +213,8 @@ class AtomCollection(ABC):
         else:
             raise AtomCollectionError("Atom not found!")
 
-    def displace(self, disp):
+    @apply_owner_handlers
+    def displace(self, disp, **kwargs):
         """
         displace(disp) -> rigidly displaces the atomic structure.
 
@@ -232,7 +222,7 @@ class AtomCollection(ABC):
         ----------
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
-            
+
         """
         if isinstance(disp, (list, tuple)):
             disp = array(disp)
@@ -243,7 +233,7 @@ class AtomCollection(ABC):
             for atom in self._atoms:
                 atom._x += disp
 
-            self._update()
+            self._update(**kwargs)
         else:
             raise AtomCollectionError("'disp' must be an array with three elements!")
 
@@ -262,7 +252,7 @@ class AtomCollection(ABC):
         -------
         Python tuple
             Indices corresponding to the location of the atom in the supercell.
-            
+
         """
         if atomid in self._loc.keys():
             return self._loc[atomid]
@@ -284,15 +274,14 @@ class AtomCollection(ABC):
         -------
         Python tuple
             Indices corresponding to the location of the atom in the supercell.
-            
+
         """
         if atom._id in self._loc.keys():
             return self._loc[atom._id]
         else:
             raise AtomCollectionError("Atom not found!")
 
-    def write_xyz(self, file_name="coords.xyz", ucell=False):
-        #TODO: using **kwargs can be useful here; ucell can be a **kwargs key
+    def write_xyz(self, file_name="coords.xyz", **kwargs):
         """
         Saves the atomic coordinates of the structure into an XYZ file.
 
@@ -300,11 +289,10 @@ class AtomCollection(ABC):
         ----------
         file_name : string, optional
             Name of the XYZ file. The default is "coords.xyz".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
-            
+
         """
+        ucell = kwargs.get("ucell", False)
+
         if not (isinstance(file_name, str) and len(file_name) > 0):
             raise AtomCollectionError("'file_name' must be a non-empty string!")
 
@@ -349,9 +337,8 @@ class AtomCollection(ABC):
             f.write(atompos)
 
     def write_pw_input(
-        self, file_name="pw.in", ucell=False, pseudopotentials={}, pwargs={}
+        self, file_name="pw.in", pseudopotentials={}, pwargs={}, **kwargs
     ):
-        #TODO: using **kwargs can be useful here; ucell can be a **kwargs key
         """
         Creates a basic input file for geometry relaxation of the structure using
         the pw.x code found in the Quantum Espresso package.
@@ -360,9 +347,6 @@ class AtomCollection(ABC):
         ----------
         file_name : string, optional
             Name of the input file. The default is "pw.in".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
         pseudopotentials : Python dictionary, optional
             Specify for each element provided as a key the name of a pseudopotential
             file given as the corresponding value. The default is {}.
@@ -412,12 +396,14 @@ class AtomCollection(ABC):
                     Grid (first three elements) and shift (last three
                     components) used to generate k-points according to the
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
-                    
+
         """
+        ucell = kwargs.get("ucell", False)
+
         if not (isinstance(file_name, str) and len(file_name) > 0):
             raise AtomCollectionError("'file_name' must be a non-empty string!")
 
-        ang2bohr = 1.8897259886
+        ang2bohr = 1.889726
         natoms = 0
         inpstr = ""
         atompos = ""
@@ -469,56 +455,60 @@ class AtomCollection(ABC):
         if "ibrav" in pwargs and pwargs["ibrav"] != 0:
             ibrav = int(pwargs["ibrav"])
             inpstr += "    ibrav=%d,\n" % int(pwargs["ibrav"])
-            latpar = (
-                self._a0 * sqrt(self._latvec[0].dot(self._latvec[0])) * n * ang2bohr
-            )
-            inpstr += "    celldm(1)=%.10f,\n" % latpar
+            celldm1 = sqrt(self._latvec[0].dot(self._latvec[0])) * n
+            inpstr += "    celldm(1)=%.6f,\n" % (self._a0 * ang2bohr * celldm1)
 
-            if pwargs["ibrav"] in (4, 6, 7):
+            if pwargs["ibrav"] in (4, 6):
+                celldm3 = sqrt(self._latvec[2].dot(self._latvec[2])) * l / celldm1
+                inpstr += "    celldm(3)=%.6f,\n" % celldm3
+            elif pwargs["ibrav"] == 7:
                 if "celldm(3)" in pwargs:
-                    inpstr += "    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
                 else:
                     raise AtomCollectionError("'celldm(3)' must be provided!")
             elif pwargs["ibrav"] in (-5, 5):
                 if "celldm(4)" in pwargs:
-                    inpstr += "    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
                 else:
                     raise AtomCollectionError("'celldm(4)' must be provided!")
-            elif pwargs["ibrav"] in (-9, 8, 9, 10, 11, 91):
-                if all(key in pwargs["ibrav"] for key in ("celldm(2)", "celldm(3)")):
-                    inpstr += "    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
-                    inpstr += "    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
+            elif pwargs["ibrav"] == 8:
+                celldm2 = sqrt(self._latvec[1].dot(self._latvec[1])) * m / celldm1
+                celldm3 = sqrt(self._latvec[2].dot(self._latvec[2])) * l / celldm1
+                inpstr += "    celldm(2)=%.6f,\n" % celldm2
+                inpstr += "    celldm(3)=%.6f,\n" % celldm3
+            elif pwargs["ibrav"] in (-9, 9, 10, 11, 91):
+                if all(key in pwargs for key in ("celldm(2)", "celldm(3)")):
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
                 else:
                     raise AtomCollectionError(
                         "'celldm(2)' and 'celldm(3)' must be provided!"
                     )
             elif pwargs["ibrav"] in (12, 13):
                 if all(
-                    key in pwargs["ibrav"]
-                    for key in ("celldm(2)", "celldm(3)", "celldm(4)")
+                    key in pwargs for key in ("celldm(2)", "celldm(3)", "celldm(4)")
                 ):
-                    inpstr += "    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
-                    inpstr += "    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
-                    inpstr += "    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
                 else:
                     raise AtomCollectionError(
                         "'celldm(2)', 'celldm(3)' and 'celldm(4)' must be provided!"
                     )
             elif pwargs["ibrav"] in (-13, -12):
                 if all(
-                    key in pwargs["ibrav"]
-                    for key in ("celldm(2)", "celldm(3)", "celldm(5)")
+                    key in pwargs for key in ("celldm(2)", "celldm(3)", "celldm(5)")
                 ):
-                    inpstr += "    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
-                    inpstr += "    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
-                    inpstr += "    celldm(5)=%.10f,\n" % pwargs["celldm(5)"]
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
                 else:
                     raise AtomCollectionError(
                         "'celldm(2)', 'celldm(3)' and 'celldm(5)' must be provided!"
                     )
             elif pwargs["ibrav"] == 14:
                 if all(
-                    key in pwargs["ibrav"]
+                    key in pwargs
                     for key in (
                         "celldm(2)",
                         "celldm(3)",
@@ -527,11 +517,11 @@ class AtomCollection(ABC):
                         "celldm(6)",
                     )
                 ):
-                    inpstr += "    celldm(2)=%.10f,\n" % pwargs["celldm(2)"]
-                    inpstr += "    celldm(3)=%.10f,\n" % pwargs["celldm(3)"]
-                    inpstr += "    celldm(4)=%.10f,\n" % pwargs["celldm(4)"]
-                    inpstr += "    celldm(5)=%.10f,\n" % pwargs["celldm(5)"]
-                    inpstr += "    celldm(6)=%.10f,\n" % pwargs["celldm(6)"]
+                    inpstr += "    celldm(2)=%.6f,\n" % pwargs["celldm(2)"]
+                    inpstr += "    celldm(3)=%.6f,\n" % pwargs["celldm(3)"]
+                    inpstr += "    celldm(4)=%.6f,\n" % pwargs["celldm(4)"]
+                    inpstr += "    celldm(5)=%.6f,\n" % pwargs["celldm(5)"]
+                    inpstr += "    celldm(6)=%.6f,\n" % pwargs["celldm(6)"]
                 else:
                     raise AtomCollectionError(
                         "'celldm(2)', 'celldm(3)', 'celldm(4)', 'celldm(5)' and 'celldm(6)' must be provided!"
@@ -539,7 +529,7 @@ class AtomCollection(ABC):
         else:
             ibrav = 0
             inpstr += "    ibrav=0,\n"
-            inpstr += "    celldm(1)=%.10f,\n" % (self._a0 * ang2bohr)
+            inpstr += "    celldm(1)=%.6f,\n" % (self._a0 * ang2bohr)
 
         inpstr += "    nat=%d,\n" % natoms
         inpstr += "    ntyp=%d,\n" % (len(self._species))
@@ -566,7 +556,7 @@ class AtomCollection(ABC):
                 if "degauss" in pwargs:
                     inpstr += "    degauss=%.4f,\n" % pwargs["degauss"]
                 else:
-                    inpstr += "    degauss=0.02"
+                    inpstr += "    degauss=0.02,\n"
         else:
             inpstr += "    occupations='fixed',\n"
 
@@ -664,24 +654,22 @@ class AtomCollection(ABC):
         with open(file_name, "w") as f:
             f.write(inpstr)
 
-    # TODO: Rename to replicate.
-    def resize(self, n, m, l):
-        print(n, m, l)
+    @apply_owner_handlers
+    def resize(self, n, m, l, **kwargs):
         """
         Resizes the atom collection structure.
 
         Parameters
         ----------
         n : integer
-            Number of repetitions of the structure's unit cell along the first 
+            Number of repetitions of the structure's unit cell along the first
             lattice vector.
         m : integer
-            Number of repetitions of the structure's unit cell along the second 
+            Number of repetitions of the structure's unit cell along the second
             lattice vector.
         l : integer
-            Number of repetitions of the structure's unit cell along the third 
+            Number of repetitions of the structure's unit cell along the third
             lattice vector.
-            
         """
         if not (
             isinstance(n, int)
@@ -695,9 +683,7 @@ class AtomCollection(ABC):
                 "'n', 'm' and 'l' values must be integers greater than or equal to zero!"
             )
         elif n == self._n and m == self._m and l == self._l:
-            if self._verbose:
-                print("The current structure size was not changed!")
-            return
+            raise AtomCollectionError("The current structure size was not changed!")
         elif n > self._maxn or m > self._maxm or l > self._maxl:
             if self._verbose:
                 print(
@@ -727,7 +713,8 @@ class AtomCollection(ABC):
         self._n = n
         self._m = m
         self._l = l
-        self._update()
+
+        self._update(**kwargs)
 
     def copy(self):
         """
@@ -737,7 +724,7 @@ class AtomCollection(ABC):
         -------
         Atom collection object
             Copy of the atom collection object.
-            
+
         """
         newobj = copy(self)
         newobj._origin = self._origin.copy()
@@ -763,7 +750,7 @@ class AtomCollection(ABC):
 
         return newobj
 
-    def _read_xyz(self, file_name):
+    def _read_xyz(self, file_name, **kwargs):
         """
         Reads the atomic coordinates of the unit cell from a file in XYZ format.
 
@@ -771,7 +758,7 @@ class AtomCollection(ABC):
         ----------
         filename : string
             Name of the XYZ file.
-            
+
         """
         if not (isinstance(file_name, str) and len(file_name) > 0):
             raise AtomCollectionError("'file_name' must be a valid file name!")
@@ -804,7 +791,8 @@ class AtomCollection(ABC):
                         ]
                     )
                 else:
-                    print("WARNING: Lattice vectors not found in the XYZ file!")
+                    if self._verbose:
+                        print("WARNING: Lattice vectors not found in the XYZ file!")
 
                 count = 2
 
@@ -818,20 +806,43 @@ class AtomCollection(ABC):
                         Atom(l[0], x=array([float(l[1]), float(l[2]), float(l[3])])),
                         loc=(0, 0, 0),
                         update=False,
+                        **kwargs
                     )
                 else:
-                    print(
-                        "WARNING: Species '%s' and atoms of this species must be added manually!"
-                        % l[0]
-                    )
+                    if self._verbose:
+                        print(
+                            "WARNING: Species '%s' and atoms of this species must be added manually!"
+                            % l[0]
+                        )
 
-        print(
-            "INFO: %d Atom objects have just been created from file '%s'!"
-            % (len(self._atoms), file_name)
-        )
+        if self._verbose:
+            print(
+                "INFO: %d Atom objects have just been created from file '%s'!"
+                % (len(self._atoms), file_name)
+            )
 
-        self._update()
-        f.close()
+    def _get_from_atom_list(self, atom_list, **kwargs):
+        """
+        Gets the atomic coordinates of the unit cell from a list of Atom objects
+        or atom IDs.
+
+        Parameters
+        ----------
+        atom_list : Python list
+            List of Atom objects or atom IDs to be added to the atom collection.
+
+        """
+        if len(atom_list) > 0:
+            for atom in atom_list:
+                if isinstance(atom, (Atom, int)):
+                    self.add_atom(atom, loc=(0, 0, 0), update=False, **kwargs)
+                else:
+                    if self._verbose:
+                        print(
+                            "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
+                        )
+        else:
+            raise AtomCollectionError("'atom_list' must be a non-empyt list!")
 
     def __getitem__(self, idx):
         """
@@ -848,7 +859,7 @@ class AtomCollection(ABC):
         Atom
             Atom object corresponding to the specified index in the structure's
             atom list.
-            
+
         """
         maxidx = len(self._atoms)
         if not isinstance(idx, int):
@@ -872,7 +883,7 @@ class AtomCollection(ABC):
         atomid : integer
             ID of the atom to be assigned to the corresponding index in the
             structure's atom list.
-            
+
         """
         maxidx = len(self._atoms)
 
@@ -923,7 +934,7 @@ class AtomCollection(ABC):
         atom : Atom
             Atom object to be assigned to the corresponding index in the structure's
             atom list.
-            
+
         """
         maxidx = len(self._atoms)
 
@@ -957,7 +968,7 @@ class AtomCollection(ABC):
         -------
         integer
             Number of Atom objects (active or not) in the structure.
-            
+
         """
         return len(self._atoms)
 
@@ -971,7 +982,7 @@ class AtomCollection(ABC):
         iterator
             An iterator that allows the user to iterate over the Atom objects in
             the structure's list of atoms.
-            
+
         """
         return iter(self._atoms)
 
@@ -986,7 +997,7 @@ class AtomCollection(ABC):
         obj : AtomCollection object
             AtomCollection object to be added to the list of AtomCollection objects
             created so far.
-            
+
         """
         if cls._instances is None:
             cls._currid = 0
@@ -997,12 +1008,12 @@ class AtomCollection(ABC):
         cls._currid += 1
 
     @abstractmethod
-    def _update(self):
+    def _update(self, **kwargs):
         """
         To be implemented in a derived atomic structure, this method is expected
         to update specific attributes of that structure when atomic coordinates
         or cell shape or cell size change.
-        
+
         """
         pass
 
@@ -1030,6 +1041,8 @@ class AtomCollection(ABC):
     n, m, l : integer, readonly
         Number of repetitions of the unit cell along the first, second and third 
         lattice vectors, respectively.
+    verbose : boolean
+        Verbosity.
     ID : integer, readonly
         Unique atomic structure identifier.
         
@@ -1076,9 +1089,10 @@ class AtomCollection(ABC):
     @a0.setter
     def a0(self, val):
         if isinstance(val, (float, int)) and val > 0.0:
-            print(
-                "WARNING: Changing the lattice parameter rescales the atomic coordinates accordingly!"
-            )
+            if self._verbose:
+                print(
+                    "WARNING: Changing the lattice parameter rescales the atomic coordinates accordingly!"
+                )
 
             old, self._a0 = self._a0, val
             fac = val / old
@@ -1118,7 +1132,8 @@ class AtomCollection(ABC):
             val = array(val)
 
         if isinstance(val, ndarray) and val.shape[0] == 3:
-            print("WARNING: Moving the origin displaces all atoms accordingly!")
+            if self._verbose:
+                print("WARNING: Moving the origin displaces all atoms accordingly!")
 
             disp = val - self._origin
             self._origin = val.astype(float)
@@ -1140,6 +1155,17 @@ class AtomCollection(ABC):
     @property
     def l(self):
         return self._l
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, val):
+        if isinstance(val, bool):
+            self._verbose = val
+        else:
+            raise AtomCollectionError("Verbosity must be a boolean!")
 
     @property
     def ID(self):

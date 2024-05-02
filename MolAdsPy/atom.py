@@ -1,5 +1,5 @@
 from ._exception import BasicException
-from numpy import array,ndarray
+from numpy import array, ndarray
 
 
 class AtomError(BasicException):
@@ -34,7 +34,7 @@ class Atom:
             a Python list or tuple. The default is [False False False].
         active : logical, optional
             Whether the atom is active or not. The default is True.
-            
+
         """
         if isinstance(symbol, str) and len(symbol) > 0 and len(symbol) <= 4:
             self._symbol = symbol
@@ -71,7 +71,7 @@ class Atom:
 
         type(self)._append(self)
 
-    def displace(self, disp):
+    def displace(self, disp, **kwargs):
         """
         Displaces the atom.
 
@@ -80,7 +80,7 @@ class Atom:
         disp : Numpy array
              Displacement vector. It can also be provided as a Python list or
              tuple.
-             
+
         """
         if isinstance(disp, (list, tuple)):
             disp = array(disp)
@@ -89,7 +89,7 @@ class Atom:
             self._x += disp.astype(float)
 
             if self._belongs_to is not None:
-                self._belongs_to._update()
+                self._belongs_to._update(**kwargs)
         else:
             raise AtomError("'disp' must be an array with three components!")
 
@@ -101,7 +101,7 @@ class Atom:
         -------
         Atom object
             Copy of the atom.
-            
+
         """
         return Atom(self._symbol, self._x, self._fixed, self._active)
 
@@ -113,7 +113,7 @@ class Atom:
         -------
         String
             A string containing the symbol, the element and the ID of the Atom object.
-            
+
         """
         return "<Atom object> Symbol: %s; Element: %s; ID: %d" % (
             self._symbol,
@@ -173,8 +173,7 @@ class Atom:
     belongs_to : AtomCollection-derived object, readonly
         Structure to which the AtomCollection object belongs.
     ID : integer, readonly
-        Unique atom identifier.
-        
+        Unique atom identifier.       
     """
 
     @property

@@ -4,9 +4,9 @@ from ._exception import BasicException
 from .molecule import Molecule
 from .slab import Slab
 from .polymer import Polymer
-from numpy import array,dot,max,min,ndarray
+from numpy import array, dot, max, min, ndarray
 from multipledispatch import dispatch
-from inspect import signature #TODO: Imported, but not used; remove
+from inspect import signature  # TODO: Imported, but not used; remove
 
 
 class AdsorptionError(BasicException):
@@ -47,8 +47,8 @@ class Adsorption(Hybrid):
             self._latvec = self._components["substrate"]._latvec
             self._components["molecules@top"] = []
             self._components["molecules@bottom"] = []
-            self._components["polymers@top"] = []
-            self._components["polymers@bottom"] = []
+            self._components["polymer@top"] = []
+            self._components["polymer@bottom"] = []
 
             if isinstance(minsep, (int, float)) and minsep > 0.0:
                 self._minsep = minsep
@@ -64,12 +64,23 @@ class Adsorption(Hybrid):
 
         substrate._belongs_to = self
 
-        self._update()
+        self._top = substrate._top
+        self._bottom = substrate._bottom
+
+        self._update(substrate, **kwargs)
 
     # region METHODS ADD AND REMOVE IMPLEMENTATIONS
     @dispatch(Molecule, str, n=int, m=int, anchor=str, vertsep=(int, float), side=str)
     def add_component(
-        self, molecule, ads_site, n=0, m=0, anchor="com", vertsep=1.0, side="top"
+        self,
+        molecule,
+        ads_site,
+        n=0,
+        m=0,
+        anchor="com",
+        vertsep=1.0,
+        side="top",
+        **kwargs
     ):
         """
         Adsorbs a molecule onto the substrate.
@@ -130,8 +141,7 @@ class Adsorption(Hybrid):
             )
             x = array([x0[0], x0[1], molecule.anchors[anchor][2] + dz])
 
-            molecule.move_to(x, anchor)
-            self._update()
+            molecule.move_to(x, anchor, **kwargs)
         else:
             raise AdsorptionError("A valid adsorption site must be provided!")
 
@@ -167,7 +177,7 @@ class Adsorption(Hybrid):
         skip_mismatch_adjust = kwargs.get("skip_mismatch_adjust", False)
 
         if polymer._orientation == 2:
-            #TODO: All errors called inside a class must be ClassNameError() 
+            # TODO: All errors called inside a class must be ClassNameError()
             raise AssertionError("The polymer molecule is perpendicular to slab!")
         if polymer._belongs_to is not None:
             raise AdsorptionError("The polymer already belongs to another structure!")
@@ -184,14 +194,14 @@ class Adsorption(Hybrid):
             raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
 
         # This object just allow one polymer because of mismatch problems with the slab.
-        #TODO: Rename; "polymer@top|bottom" is better than "polymers@top|bottom"
+        # TODO: Rename; "polymer@top|bottom" is better than "polymer@top|bottom"
         if (
-            len(self._components["polymers@top"]) > 0
-            or len(self._components["polymers@bottom"]) > 0
+            len(self._components["polymer@top"]) > 0
+            or len(self._components["polymer@bottom"]) > 0
         ):
             raise AdsorptionError("The adsorbed already has a polymer!")
 
-        self._components["polymers@" + side].append(polymer)
+        self._components["polymer@" + side].append(polymer)
 
         self._adjustMismatchPolymerSlab(polymer)
 
@@ -206,7 +216,9 @@ class Adsorption(Hybrid):
     @dispatch(
         Molecule, (ndarray, list, tuple), anchor=str, vertsep=(int, float), side=str
     )
-    def add_component(self, molecule, pos, anchor="com", vertsep=1.0, side="top"):
+    def add_component(
+        self, molecule, pos, anchor="com", vertsep=1.0, side="top", **kwargs
+    ):
         """
         Adsorbs a molecule onto the substrate.
 
@@ -254,8 +266,7 @@ class Adsorption(Hybrid):
 
             molecule._belongs_to = self
 
-            molecule.move_to(x, anchor)
-            self._update()
+            molecule.move_to(x, anchor, **kwargs)
         else:
             raise AdsorptionError(
                 "'pos' must be provided as a list with two components!"
@@ -322,7 +333,7 @@ class Adsorption(Hybrid):
             )
 
     @dispatch(Molecule)
-    def remove_component(self, molecule):
+    def remove_component(self, molecule, **kwargs):
         """
         Removes an adsorbed molecule.
 
@@ -340,7 +351,7 @@ class Adsorption(Hybrid):
 
         molecule._belongs_to = None
 
-        self._update()
+        self._update(molecule, **kwargs)
 
     # TODO: Implement
     @dispatch(Polymer)
@@ -365,7 +376,7 @@ class Adsorption(Hybrid):
         self._update()
 
     @dispatch(int)
-    def remove_component(self, molid):
+    def remove_component(self, molid, **kwargs):
         """
         Removes an adsorbed molecule.
 
@@ -387,12 +398,12 @@ class Adsorption(Hybrid):
 
         molecule._belongs_to = None
 
-        self._update()
+        self._update(molecule, **kwargs)
 
     # endregion
 
     # region AUXILIARY FUNCTIONS FOR MISMATCH ADJUSTMENT
-    #TODO: Rename; using PEP 8 function name conventions (snake style, not camel, in Python)
+    # TODO: Rename; using PEP 8 function name conventions (snake style, not camel, in Python)
     def _adjustMismatchPolymerSlab(self, polymer):
         r"""
         Adjust Resize of Slab and Polymer to adjust mismatch in defined tolerance
@@ -438,8 +449,8 @@ class Adsorption(Hybrid):
         slab.resize(resize_vector[0], resize_vector[1])
         polymer.resize(resize_polymer)
 
-    #TODO: Rename; names of methods should start with a verb, be descriptive enough but maybe not that long
-    #TODO: __MISMATCHTOLSTD__ and __MAXREPMISMATCH__ are not used elsewhere, no reason to have these constants at class level
+    # TODO: Rename; names of methods should start with a verb, be descriptive enough but maybe not that long
+    # TODO: __MISMATCHTOLSTD__ and __MAXREPMISMATCH__ are not used elsewhere, no reason to have these constants at class level
     def _polymer_slab_match_box_length(
         self,
         polymer,
@@ -447,7 +458,7 @@ class Adsorption(Hybrid):
         maxrep=__MAXREPMISMATCH__,
     ):
         """
-        Returns the resize number i,j respective to Slab and Polymer necessary 
+        Returns the resize number i,j respective to Slab and Polymer necessary
         for mismatch to be under given tolerance (%)
 
         Parameters
@@ -511,20 +522,10 @@ class Adsorption(Hybrid):
             Adsorbed molecule.
         sep : float
             Nearest distance separating the molecule from the substrate.
-        **kwargs : See below
-
-        Keywork Arguments
-        ----------
-        sep_violation : boolean
-            The user gets the freedom to violate the set minsep using this flag
 
         """
-
-        sep_violation = kwargs.get("sep_violation", False)
-
-        if not sep_violation:
-            if sep < self._minsep:
-                raise AdsorptionError("Molecule will be too close to the substrate!")
+        if sep < self._minsep:
+            raise AdsorptionError("Molecule will be too close to the substrate!")
 
         dz = 0.0
 
@@ -536,12 +537,11 @@ class Adsorption(Hybrid):
             raise AdsorptionError("Molecule not found!")
 
         if abs(dz) > 0.0:
-            molecule.displace(array([0.0, 0.0, dz]))
-            self._update()
+            molecule.displace(array([0.0, 0.0, dz]), call_handler=False, **kwargs)
 
     # TODO: Avoid recursion. Make flag to update function not to call set_separation again
     @dispatch(Polymer, (int, float))
-    def set_separation(self, polymer, sep, update=True):
+    def set_separation(self, polymer, sep, **kwargs):
         """
         Rigidly displaces the polymer along the direction perpendicular to the
         substrate, such that the separation between the top/bottom of the substrate
@@ -567,7 +567,7 @@ class Adsorption(Hybrid):
 
         dz = 0.0
 
-        #TODO: Polymer should be placed in self._components["polymer@top"|"bottom"]
+        # TODO: Polymer should be placed in self._components["polymer@top"|"bottom"]
         if polymer in self._components["molecules@top"]:
             dz = self._components["substrate"]._top + sep - polymer._minz
         elif polymer in self._components["molecules@bottom"]:
@@ -577,8 +577,6 @@ class Adsorption(Hybrid):
 
         if abs(dz) > 0.0:
             polymer.displace(array([0.0, 0.0, dz]))
-            if update:
-                self._update()
 
     @dispatch(int, (int, float))
     def set_separation(self, molid, sep, **kwargs):
@@ -594,11 +592,8 @@ class Adsorption(Hybrid):
         sep : float
             Nearest distance separating the molecule from the substrate.
         """
-        sep_violation = kwargs.get("sep_violation", False)
-
-        if not sep_violation:
-            if sep < self._minsep:
-                raise AdsorptionError("Molecule will be too close to the substrate!")
+        if sep < self._minsep:
+            raise AdsorptionError("Molecule will be too close to the substrate!")
 
         for molecule in self.adsorbed_molecules:
             if molecule.ID == molid:
@@ -612,8 +607,9 @@ class Adsorption(Hybrid):
                     raise AdsorptionError("Molecule not found!")
 
                 if abs(dz) > 0.0:
-                    molecule.displace(array([0.0, 0.0, dz]))
-                    self._update()
+                    molecule.displace(
+                        array([0.0, 0.0, dz]), call_handler=False, **kwargs
+                    )
 
                 break
         else:
@@ -622,7 +618,7 @@ class Adsorption(Hybrid):
     # endregion
 
     # region Begin and End Hanlders for children methods
-    #TODO: Rename to begin_handler and end_handler, to be PEP 8 compliant
+    # TODO: Rename to _begin_handler and _end_handler, to be PEP 8 compliant
     def beginHandler(self, obj, method, method_locals, **kwargs):
         """
         This Handler is used on the begining of AtomCollection objects
@@ -647,80 +643,83 @@ class Adsorption(Hybrid):
             if method.__name__ == "align":
                 self._adjustMismatchPolymerSlab(obj)
 
+            for polymer in self.adsorbed_polymers:
+                dz = 0.0
+
+                if (
+                    polymer in self._components["polymer@top"]
+                    and (polymer.minz - self._components["substrate"]._top)
+                    < self._minsep
+                ):
+                    dz = (
+                        self._components["substrate"]._top
+                        + self._minsep
+                        - polymer._minz
+                    )
+                elif (
+                    polymer in self._components["polymer@bottom"]
+                    and (self._components["substrate"]._bottom - polymer._maxz)
+                    < self._minsep
+                ):
+                    dz = (
+                        self._components["substrate"]._bottom
+                        - self._minsep
+                        - polymer._maxz
+                    )
+
+                if abs(dz) > 0.0:
+                    polymer.displace(array([0.0, 0.0, dz]))
+
+    @dispatch(Slab, object, list)
+    def _begin_handler(self, slab, method, method_args, **kwargs):
+        pass
+
+    @dispatch(Slab, object, list)
+    def _end_handler(self, slab, method, method_args, **kwargs):
+        pass
+
+    @dispatch(Molecule, object, list)
+    def _begin_handler(self, molecule, method, method_args, **kwargs):
+        pass
+
+    @dispatch(Molecule, object, list)
+    def _end_handler(self, molecule, method, method_args, **kwargs):
+        dz = 0.0
+
+        if (
+            molecule in self._components["molecules@top"]
+            and (molecule.minz - self._components["substrate"]._top) < self._minsep
+        ):
+            dz = self._components["substrate"]._top + self._minsep - molecule._minz
+        elif (
+            molecule in self._components["molecules@bottom"]
+            and (self._components["substrate"]._bottom - molecule._maxz) < self._minsep
+        ):
+            dz = self._components["substrate"]._bottom - self._minsep - molecule._maxz
+
+        if abs(dz) > 0.0:
+            molecule.displace(array([0.0, 0.0, dz]), call_handler=False)
+
     # endregion
 
-    def resize(self, n, m):
-        """
-        Resizes the substrate in the XY plane.
-
-        Parameters
-        ----------
-        n : integer
-            Number of repetitions of the substrate's unit cell along the first lattice
-            vector.
-        m : integer
-            Number of repetitions of the substrate's unit cell along the second lattice
-            vector.
-        """
-        self._components["substrate"].resize(n, m)
-        self._update()
-
-    def _update(self):
+    def _update(self, obj=None, **kwargs):
         """
         Updates attributes of the Adsorption object when atomic coordinates or
         cell shape or cell size change.
+
+        Parameters
+        ----------
+        obj : AtomCollection object, optional
+            An atom collection object representing either the substrate or an
+            adsorbed molecule. The default is None.
+
         """
-
-        self._a0 = self._components["substrate"]._a0
-        self._m = self._components["substrate"]._m
-        self._n = self._components["substrate"]._n
-        self._maxm = self._components["substrate"]._maxm
-        self._maxn = self._components["substrate"]._maxn
-
-        for molecule in self.adsorbed_molecules:
-            dz = 0.0
-
-            # self.set_separation(update=False)
-
-            if (
-                molecule in self._components["molecules@top"]
-                and (molecule.minz - self._components["substrate"]._top) < self._minsep
-            ):
-                dz = self._components["substrate"]._top + self._minsep - molecule._minz
-            elif (
-                molecule in self._components["molecules@bottom"]
-                and (self._components["substrate"]._bottom - molecule._maxz)
-                < self._minsep
-            ):
-                dz = (
-                    self._components["substrate"]._bottom
-                    - self._minsep
-                    - molecule._maxz
-                )
-
-            #TODO: update_owner=False must be passed as argument to displace to avoid it calling Adsorption._update()
-            if abs(dz) > 0.0:
-                molecule.displace(array([0.0, 0.0, dz]))
-        for polymer in self.adsorbed_polymers:
-            dz = 0.0
-
-            # self.set_separation(update=False)
-            if (
-                polymer in self._components["polymers@top"]
-                and (polymer.minz - self._components["substrate"]._top) < self._minsep
-            ):
-                dz = self._components["substrate"]._top + self._minsep - polymer._minz
-            elif (
-                polymer in self._components["polymers@bottom"]
-                and (self._components["substrate"]._bottom - polymer._maxz)
-                < self._minsep
-            ):
-                dz = (
-                    self._components["substrate"]._bottom - self._minsep - polymer._maxz
-                )
-
-            if abs(dz) > 0.0:
-                polymer.displace(array([0.0, 0.0, dz]))
+        if isinstance(obj, Slab):
+            self._a0 = obj._a0
+            self._m = obj._m
+            self._n = obj._n
+            self._maxm = obj._maxm
+            self._maxn = obj._maxn
 
         valid_z = array([atom._x[2] for atom in self._atoms if atom._active])
         self._top = max(valid_z, axis=0)
@@ -778,7 +777,7 @@ class Adsorption(Hybrid):
     @property
     def adsorbed_polymers(self):
         return tuple(
-            self._components["polymers@top"] + self._components["polymers@bottom"]
+            self._components["polymer@top"] + self._components["polymer@bottom"]
         )
 
     @property
@@ -789,6 +788,35 @@ class Adsorption(Hybrid):
     def minimum_separation(self, val):
         if isinstance(val, (float, int)) and val > 0.0:
             self._minsep = val
+
+            for molecule in self.adsorbed_molecules:
+                dz = 0.0
+
+                if (
+                    molecule in self._components["molecules@top"]
+                    and (molecule._minz - self._components["substrate"]._top)
+                    < self._minsep
+                ):
+                    dz = (
+                        self._components["substrate"]._top
+                        + self._minsep
+                        - molecule._minz
+                    )
+                elif (
+                    molecule in self._components["molecules@bottom"]
+                    and (self._components["substrate"]._bottom - molecule._maxz)
+                    < self._minsep
+                ):
+                    dz = (
+                        self._components["substrate"]._bottom
+                        - self._minsep
+                        - molecule._maxz
+                    )
+
+                if abs(dz) > 0.0:
+                    molecule.displace(
+                        array([0.0, 0.0, dz]), call_handler=False, call_update=False
+                    )
 
             self._update()
         else:
@@ -822,13 +850,11 @@ class Adsorption(Hybrid):
 
     @property
     def a0(self):
-        return self.components["substrate"]._a0
+        return self.components["substrate"].a0
 
     @a0.setter
     def a0(self, val):
-        self._components["substrate"]._a0 = val
-
-        self._update()
+        self._components["substrate"].a0 = val
 
     @property
     def lattice_vectors(self):
@@ -846,11 +872,10 @@ class Adsorption(Hybrid):
         if isinstance(val, ndarray) and val.shape[0] == 3:
             disp = val - self._components["substrate"]._origin
 
-            self._components["substrate"].displace(disp)
+            self._components["substrate"].displace(disp, call_handler=False)
 
             for molecule in self.adsorbed_molecules:
-                #TODO: update_owner=False must be passed as argument to displace to avoid it calling Adsorption._update()
-                molecule.displace(disp)
+                molecule.displace(disp, call_handler=False, call_update=False)
 
             self._update()
         else:

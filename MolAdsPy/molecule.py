@@ -1,8 +1,8 @@
 from __future__ import print_function
 from ._atomcollection import AtomCollection
+from ._utils import apply_owner_handlers, update_owner_attributes
 from ._exception import BasicException
-from .atom import Atom
-from numpy import array,ndarray,min,max,sum,cos,sin,radians,dot
+from numpy import array, ndarray, min, max, sum, cos, sin, radians, dot
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -38,7 +38,6 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        #TODO: Check the need of **kwargs, since it does not change anything in the constructor
         super().__init__(**kwargs)
 
         if len(label) > 0:
@@ -58,7 +57,7 @@ class Molecule(AtomCollection):
         }  # Anchor points for translations and rotations
 
     @dispatch(str, str, file_type=str, vaccuum=(int, float))
-    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0):
+    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0, **kwargs):
         """
         Object initialization.
 
@@ -77,8 +76,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        #TODO: Check this, since for this signature it does not send **kwargs
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -102,8 +100,10 @@ class Molecule(AtomCollection):
         else:
             raise MoleculeError("'file_name' must be a valid file name!")
 
+        self._update(**kwargs)
+
     @dispatch(str, list, vaccuum=(int, float))
-    def __init__(self, label, atom_list, vaccuum=10.0):
+    def __init__(self, label, atom_list, vaccuum=10.0, **kwargs):
         """
         Object initialization.
 
@@ -119,7 +119,7 @@ class Molecule(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -136,19 +136,9 @@ class Molecule(AtomCollection):
         else:
             raise MoleculeError("'vaccuum' must be a number greater than zero!")
 
-        if len(atom_list) > 0:
-            for atom in atom_list:
-                if isinstance(atom, (Atom, int)):
-                    self.add_atom(atom, loc=(0, 0, 0), update=False)
-                else:
-                    if self._verbose:
-                        print(
-                            "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
-                        )
-        else:
-            raise MoleculeError("'atom_list' must be a non-empyt list!")
+        self._get_from_atom_list(atom_list, **kwargs)
 
-        self._update()
+        self._update(**kwargs)
 
     def add_anchor(self, anchor, pos):
         """
@@ -193,7 +183,7 @@ class Molecule(AtomCollection):
         else:
             raise MoleculeError("'anchor' is not a valid anchor point!")
 
-    def write_xyz(self, file_name="molecule.xyz"):
+    def write_xyz(self, file_name="molecule.xyz", **kwargs):
         """
         Saves the atomic coordinates of the molecule into an XYZ file.
 
@@ -203,9 +193,11 @@ class Molecule(AtomCollection):
              Name of the XYZ file. The default is "molecule.xyz".
 
         """
-        super().write_xyz(file_name, ucell=True)
+        super().write_xyz(file_name, ucell=True, **kwargs)
 
-    def write_pw_input(self, file_name="molecule.in", pseudopotentials={}, pwargs={}):
+    def write_pw_input(
+        self, file_name="molecule.in", pseudopotentials={}, pwargs={}, **kwargs
+    ):
         """
         Creates a basic input file for geometry relaxation of the molecule using
         the pw.x code found in the Quantum Espresso package.
@@ -219,7 +211,8 @@ class Molecule(AtomCollection):
             file given as the corresponding value. The default is {}.
         pwargs : Python dictionary.
             Dictionary containing key-value pairs that allow some customization
-            of the input file. At the moment, those are the keys accepted:
+            of the input file. For additional information, check out 'pw.x'
+            documentation. These are currently the accepted keys:
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
@@ -251,12 +244,13 @@ class Molecule(AtomCollection):
                     Beta parameter in charge mixing. The default is 0.7.
 
         """
-        pwargs["calculation"]="relax"
-        pwargs["ibrav"]=0
-        pwargs["kvec"]=[1,1,1,0,0,0]
-        ucell=True
+        pwargs["calculation"] = "relax"
+        pwargs["ibrav"] = 0
+        pwargs["kvec"] = [1, 1, 1, 0, 0, 0]
 
-        super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
+        super().write_pw_input(
+            file_name, pseudopotentials, pwargs, ucell=True, **kwargs
+        )
 
     def copy(self):
         """
@@ -272,7 +266,7 @@ class Molecule(AtomCollection):
 
         return newmol
 
-    def displace(self, disp):
+    def displace(self, disp, **kwargs):
         """
         displace(disp) -> rigidly displaces the molecule.
 
@@ -281,13 +275,13 @@ class Molecule(AtomCollection):
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
         """
-        super().displace(disp)
+        super().displace(disp, **kwargs)
 
         for key in self._anchors.keys():
             if key != "com":
                 self._anchors[key] += disp
 
-    def move_to(self, x, anchor="com"):
+    def move_to(self, x, anchor="com", **kwargs):
         """
         move_to(x,anchor) -> rigidly moves the molecule such that the anchor
         point is located at 'x'.
@@ -311,12 +305,12 @@ class Molecule(AtomCollection):
         if isinstance(x, ndarray) and x.shape[0] == 3:
             disp = x.astype(float) - self._anchors[anchor]
 
-            self.displace(disp)
+            self.displace(disp, **kwargs)
         else:
             raise MoleculeError("'x' must be an array with three components!")
 
-    def rotate(self, theta, phi, psi, anchor="com"):
-        #TODO: Add kwargs with update and update_owner keys to control wheter to call the _update methods or not
+    @apply_owner_handlers
+    def rotate(self, theta, phi, psi, anchor="com", **kwargs):
         """
         rotate(theta,phi,psi,anchor) -> rotates the molecule around an anchor point.
 
@@ -367,9 +361,8 @@ class Molecule(AtomCollection):
                 self._anchors[key] = (
                     dot((self._anchors[key] - rotpoint), rotmatrix) + rotpoint
                 )
-                
-        #TODO: This has to be fixed. Like that, it never calls the _update() method of the hybrid object
-        self._update()
+
+        self._update(**kwargs)
 
     def resize(self):
         """
@@ -378,11 +371,12 @@ class Molecule(AtomCollection):
         """
         raise MoleculeError("Method not available for Molecule objects!")
 
-    def _update(self):
+    @update_owner_attributes
+    def _update(self, **kwargs):
         """
         _update() -> simultaneously updates the molecule's center of mass and
         the values of its extremities.
-        
+
         """
         valid_coords = array([atom._x for atom in self.active_atoms])
         atomic_mass = array([atom.atomic_mass for atom in self.active_atoms])
@@ -417,7 +411,7 @@ class Molecule(AtomCollection):
         -------
         String.
             A string containing the type and ID of the Molecule object.
-            
+
         """
         return "<Molecule object> Type: %s; ID: %d" % (self._label, self._id)
 

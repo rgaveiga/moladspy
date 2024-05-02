@@ -1,8 +1,8 @@
 from __future__ import print_function
 from ._atomcollection import AtomCollection
+from ._utils import update_owner_attributes
 from ._exception import BasicException
-from .atom import Atom
-from numpy import array,ndarray,min,max
+from numpy import array, ndarray, min, max
 from copy import deepcopy
 from multipledispatch import dispatch
 
@@ -28,7 +28,6 @@ class Slab(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        #TODO: Check in Molecule, same question
         super().__init__(**kwargs)
 
         if len(label) > 0:
@@ -46,7 +45,7 @@ class Slab(AtomCollection):
         self._bottom = None  # Miniumum Z coordinate of the slab
 
     @dispatch(str, str, file_type=str, vaccuum=(int, float))
-    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0):
+    def __init__(self, label, file_name, file_type="XYZ", vaccuum=10.0, **kwargs):
         """
         Object initialization.
 
@@ -64,7 +63,7 @@ class Slab(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -86,8 +85,10 @@ class Slab(AtomCollection):
 
         self._ads_sites = {}  # Dictionary of adsorption sites
 
+        self._update(**kwargs)
+
     @dispatch(str, list, float, (ndarray, list, tuple), vaccuum=(int, float))
-    def __init__(self, label, atom_list, a0, lattice_vectors, vaccuum=10.0):
+    def __init__(self, label, atom_list, a0, lattice_vectors, vaccuum=10.0, **kwargs):
         """
         Object  initialization.
 
@@ -108,7 +109,7 @@ class Slab(AtomCollection):
             boundary conditions scheme. The default is 10.0 Angstroms.
 
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         if len(label) > 0:
             self._label = label
@@ -135,21 +136,11 @@ class Slab(AtomCollection):
                 "'lattice_vectors' must be a Numpy array with three vectors!"
             )
 
-        if len(atom_list) > 0:
-            for atom in atom_list:
-                if isinstance(atom, (Atom, int)):
-                    self.add_atom(atom, loc=(0, 0, 0), update=False)
-                else:
-                    if self._verbose:
-                        print(
-                            "WARNING! An element in the atom list must be either an Atom object or an atom ID!"
-                        )
-        else:
-            raise SlabError("'atom_list' must be a non-empyt list!")
-
-        self._update()
+        self._get_from_atom_list(atom_list, **kwargs)
 
         self._ads_sites = {}  # Dictionary of adsorption sites
+
+        self._update(**kwargs)
 
     def add_adsorption_site(self, ads_site, pos):
         """
@@ -187,7 +178,7 @@ class Slab(AtomCollection):
         else:
             raise SlabError("'ads_site' is not a valid label for an adsorption site!")
 
-    def displace(self, disp):
+    def displace(self, disp, **kwargs):
         """
         displace(disp) -> rigidly displaces the slab.
 
@@ -195,14 +186,14 @@ class Slab(AtomCollection):
         ----------
         disp : Numpy array
             Displacement vector. It can also be provided as a Python list or tuple.
-            
+
         """
-        super().displace(disp)
+        super().displace(disp, **kwargs)
 
         for key in self._ads_sites.keys():
             self._ads_sites[key] += disp[:2]
 
-    def resize(self, n, m):
+    def resize(self, n, m, **kwargs):
         """
         Resizes the slab in the XY plane.
 
@@ -216,28 +207,23 @@ class Slab(AtomCollection):
             vector.
 
         """
-        l = 0
+        super().resize(n, m, l=0, **kwargs)
 
-        super().resize(n, m, l)
-
-    def write_xyz(self, file_name="slab.xyz", ucell=False):
+    def write_xyz(self, file_name="slab.xyz", **kwargs):
         """
-        write_xyz(file_name,ucell) -> saves the atomic coordinates of the slab into an
+        write_xyz(file_name) -> saves the atomic coordinates of the slab into an
             XYZ file.
 
         Parameters
         ----------
         file_name : string, optional
             Name of the XYZ file. The default is "slab.xyz".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
 
         """
-        super().write_xyz(file_name, ucell)
+        super().write_xyz(file_name, **kwargs)
 
     def write_pw_input(
-        self, file_name="slab.in", ucell=False, pseudopotentials={}, pwargs={}
+        self, file_name="slab.in", pseudopotentials={}, pwargs={}, **kwargs
     ):
         """
         Creates a basic input file for geometry relaxation of the slab using the
@@ -247,43 +233,40 @@ class Slab(AtomCollection):
         ----------
         file_name : string, optional
             Name of the input file. The default is "slab.in".
-        ucell : logical, optional
-            Write only the coordinates of atoms in the unit cell. The default is
-            False.
         pseudopotentials : Python dictionary, optional
             Specify for each element provided as a key the name of a pseudopotential
             file given as the corresponding value. The default is {}.
         pwargs : Python dictionary.
-            Dictionary containing key-value pairs that allow some customization 
-            of the input file. For additional information, check out 'pw.x' 
+            Dictionary containing key-value pairs that allow some customization
+            of the input file. For additional information, check out 'pw.x'
             documentation. These are currently the accepted keys:
                 calculation : string, optional
-                    Type of calculation to be carried out. It must be either 
+                    Type of calculation to be carried out. It must be either
                     'relax' or 'vc-relax'. The default is 'relax'.
                 ibrav : integer, optional
                     Bravais lattice. The default is 0.
                 celldm(2)-celldm(6) : float, optional (depending on 'ibrav')
-                    Crystallographic constants that can be provided depending on 
-                    'ibrav' value. 'celldm(1)', the lattice parameter, is calculated 
+                    Crystallographic constants that can be provided depending on
+                    'ibrav' value. 'celldm(1)', the lattice parameter, is calculated
                     from the 'a0' property of the atom collection object.
                 ecutwfc : float, optional
                     Plane-wave energy cutoff. The default is 32 Ry.
                 ecutrho : float, optional
                     Charge density cutoff. The default is 128 Ry.
                 nspin : integer, optional
-                    Spin polarization. It can be either 1 (non-polarized) or 
+                    Spin polarization. It can be either 1 (non-polarized) or
                     2 (polarized, magnetization along z axis). The default is 1.
                 occupations : string, optional
                     Occupation function. The default is 'fixed'.
                 smearing : string, optional
-                    Smearing for metals, if the occupation function is 'smearing'. 
+                    Smearing for metals, if the occupation function is 'smearing'.
                     The defautl is 'gaussian'.
                 degauss : float, optional
-                    Gaussian spreading, in Ry, if the occupation function is 
+                    Gaussian spreading, in Ry, if the occupation function is
                     'smearing'. The default is 0.02 Ry.
                 starting_magnetization : Python list, optional
-                    List of starting magnetic moments for the different atom 
-                    types in the slab. The default is 1.0 Bohr magneton 
+                    List of starting magnetic moments for the different atom
+                    types in the slab. The default is 1.0 Bohr magneton
                     for the first atom type and 0.0 for the others, if any.
                 input_dft : string, optional
                     It allows to activate non-local vdW interaction by setting
@@ -296,12 +279,12 @@ class Slab(AtomCollection):
                 mixing_beta : float, optional
                     Beta parameter in charge mixing. The default is 0.7.
                 kvec : Python list, optional
-                    Grid (first three elements) and shift (last three 
+                    Grid (first three elements) and shift (last three
                     components) used to generate k-points according to the
                     Monhorst-Pack scheme. The default is [1,1,1,0,0,0].
 
         """
-        super().write_pw_input(file_name, ucell, pseudopotentials, pwargs)
+        super().write_pw_input(file_name, pseudopotentials, pwargs, **kwargs)
 
     def copy(self):
         """
@@ -311,30 +294,22 @@ class Slab(AtomCollection):
         -------
         Slab object
             Copy of the Slab object.
-            
+
         """
         newslab = super().copy()
         newslab._ads_sites = deepcopy(self._ads_sites)
 
         return newslab
 
-    def _update(self):
+    @update_owner_attributes
+    def _update(self, **kwargs):
         """
         _update() -> updates the slab's top and bottom, as well as its origin,
             if an event (e.g., adding a new atom to the slab) changes the atomic
             coordinates.
 
         """
-        valid_coords = array(
-            [
-                atom._x
-                for atom in self._atoms
-                if atom._active
-                and self._loc[atom._id][0] <= self._n
-                and self._loc[atom._id][1] <= self._m
-                and self._loc[atom._id][2] <= self._l
-            ]
-        )
+        valid_coords = array([atom._x for atom in self.active_atoms])
 
         if valid_coords.shape[0] > 0:
             self._origin = min(valid_coords, axis=0)
@@ -356,7 +331,7 @@ class Slab(AtomCollection):
         -------
         String.
             A string containing the name and ID of the Slab object.
-            
+
         """
         return "<Slab object> Name: %s; ID: %d" % (self._label, self._id)
 
