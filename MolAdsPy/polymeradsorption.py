@@ -53,12 +53,16 @@ class PolymerAdsorption(Hybrid):
             if isinstance(minsep, (int, float)) and minsep > 0.0:
                 self._minsep = minsep
             else:
-                raise PolymerAdsorptionError("'minsep' must be a number greater than zero!")
+                raise PolymerAdsorptionError(
+                    "'minsep' must be a number greater than zero!"
+                )
 
             if isinstance(vaccuum, (int, float)) and vaccuum > 0.0:
                 self._vaccuum = vaccuum
             else:
-                raise PolymerAdsorptionError("'vaccuum' must be a number greater than zero!")
+                raise PolymerAdsorptionError(
+                    "'vaccuum' must be a number greater than zero!"
+                )
         else:
             raise PolymerAdsorptionError("Substrate must be a Slab object!")
 
@@ -109,7 +113,9 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise PolymerAdsorptionError("The molecule already belongs to another structure!")
+            raise PolymerAdsorptionError(
+                "The molecule already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise PolymerAdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
@@ -180,7 +186,9 @@ class PolymerAdsorption(Hybrid):
             # TODO: All errors called inside a class must be ClassNameError()
             raise AssertionError("The polymer molecule is perpendicular to slab!")
         if polymer._belongs_to is not None:
-            raise PolymerAdsorptionError("The polymer already belongs to another structure!")
+            raise PolymerAdsorptionError(
+                "The polymer already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise PolymerAdsorptionError("No substrate has been defined!")
 
@@ -241,7 +249,9 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise PolymerAdsorptionError("The polymer already belongs to another structure!")
+            raise PolymerAdsorptionError(
+                "The polymer already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise PolymerAdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
@@ -300,7 +310,9 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if polymer._belongs_to is not None:
-            raise PolymerAdsorptionError("The polymer already belongs to another structure!")
+            raise PolymerAdsorptionError(
+                "The polymer already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise PolymerAdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in polymer.anchors.keys():

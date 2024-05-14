@@ -49,12 +49,16 @@ class MoleculeAdsorption(Hybrid):
             if isinstance(minsep, (int, float)) and minsep > 0.0:
                 self._minsep = minsep
             else:
-                raise MoleculeAdsorptionError("'minsep' must be a number greater than zero!")
+                raise MoleculeAdsorptionError(
+                    "'minsep' must be a number greater than zero!"
+                )
 
             if isinstance(vaccuum, (int, float)) and vaccuum > 0.0:
                 self._vaccuum = vaccuum
             else:
-                raise MoleculeAdsorptionError("'vaccuum' must be a number greater than zero!")
+                raise MoleculeAdsorptionError(
+                    "'vaccuum' must be a number greater than zero!"
+                )
         else:
             raise MoleculeAdsorptionError("Substrate must be a Slab object!")
 
@@ -64,7 +68,6 @@ class MoleculeAdsorption(Hybrid):
         self._bottom = substrate._bottom
 
         self._update(substrate, **kwargs)
-
 
     @dispatch(Molecule, str, n=int, m=int, anchor=str, vertsep=(int, float), side=str)
     def add_component(
@@ -105,7 +108,9 @@ class MoleculeAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise MoleculeAdsorptionError("The molecule already belongs to another structure!")
+            raise MoleculeAdsorptionError(
+                "The molecule already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise MoleculeAdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
@@ -127,7 +132,9 @@ class MoleculeAdsorption(Hybrid):
             elif side == "bottom":
                 dz = self._components["substrate"]._bottom - sep - molecule._maxz
             else:
-                raise MoleculeAdsorptionError("'side' must be either 'top' or 'bottom'!")
+                raise MoleculeAdsorptionError(
+                    "'side' must be either 'top' or 'bottom'!"
+                )
 
             self._components["molecules@" + side].append(molecule)
 
@@ -140,7 +147,6 @@ class MoleculeAdsorption(Hybrid):
             molecule.move_to(x, anchor, **kwargs)
         else:
             raise MoleculeAdsorptionError("A valid adsorption site must be provided!")
-
 
     @dispatch(
         Molecule, (ndarray, list, tuple), anchor=str, vertsep=(int, float), side=str
@@ -170,7 +176,9 @@ class MoleculeAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise MoleculeAdsorptionError("The polymer already belongs to another structure!")
+            raise MoleculeAdsorptionError(
+                "The polymer already belongs to another structure!"
+            )
         elif self._components["substrate"] is None:
             raise MoleculeAdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
@@ -187,7 +195,9 @@ class MoleculeAdsorption(Hybrid):
             elif side == "bottom":
                 dz = self._components["substrate"]._bottom - sep - molecule._maxz
             else:
-                raise MoleculeAdsorptionError("'side' must be either 'top' or 'bottom'!")
+                raise MoleculeAdsorptionError(
+                    "'side' must be either 'top' or 'bottom'!"
+                )
 
             x = array([pos[0], pos[1], molecule.anchors[anchor][2] + dz])
 
@@ -200,7 +210,6 @@ class MoleculeAdsorption(Hybrid):
             raise MoleculeAdsorptionError(
                 "'pos' must be provided as a list with two components!"
             )
-
 
     @dispatch(Molecule)
     def remove_component(self, molecule, **kwargs):
@@ -222,7 +231,6 @@ class MoleculeAdsorption(Hybrid):
         molecule._belongs_to = None
 
         self._update(molecule, **kwargs)
-
 
     @dispatch(int)
     def remove_component(self, molid, **kwargs):
@@ -249,7 +257,6 @@ class MoleculeAdsorption(Hybrid):
 
         self._update(molecule, **kwargs)
 
-
     @dispatch(Molecule, (int, float))
     def set_separation(self, molecule, sep, **kwargs):
         """
@@ -266,7 +273,9 @@ class MoleculeAdsorption(Hybrid):
 
         """
         if sep < self._minsep:
-            raise MoleculeAdsorptionError("Molecule will be too close to the substrate!")
+            raise MoleculeAdsorptionError(
+                "Molecule will be too close to the substrate!"
+            )
 
         dz = 0.0
 
@@ -279,7 +288,6 @@ class MoleculeAdsorption(Hybrid):
 
         if abs(dz) > 0.0:
             molecule.displace(array([0.0, 0.0, dz]), call_handler=False, **kwargs)
-
 
     @dispatch(int, (int, float))
     def set_separation(self, molid, sep, **kwargs):
@@ -296,7 +304,9 @@ class MoleculeAdsorption(Hybrid):
             Nearest distance separating the molecule from the substrate.
         """
         if sep < self._minsep:
-            raise MoleculeAdsorptionError("Molecule will be too close to the substrate!")
+            raise MoleculeAdsorptionError(
+                "Molecule will be too close to the substrate!"
+            )
 
         for molecule in self.adsorbed_molecules:
             if molecule.ID == molid:
@@ -317,7 +327,6 @@ class MoleculeAdsorption(Hybrid):
                 break
         else:
             raise MoleculeAdsorptionError("Molecule ID not found!")
-
 
     @dispatch(Slab, object, list)
     def _begin_handler(self, slab, method, method_args, **kwargs):
@@ -348,7 +357,6 @@ class MoleculeAdsorption(Hybrid):
 
         if abs(dz) > 0.0:
             molecule.displace(array([0.0, 0.0, dz]), call_handler=False)
-
 
     def _update(self, obj=None, **kwargs):
         """
