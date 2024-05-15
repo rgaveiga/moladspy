@@ -5,4 +5,4 @@ from .polymer import Polymer
 from .moleculeadsorption import MoleculeAdsorption
 from .polymeradsorption import PolymerAdsorption
 
-__version__ = "0.9.2"
+__version__ = "0.9.1"

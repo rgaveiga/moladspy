@@ -9,11 +9,11 @@ from multipledispatch import dispatch
 from inspect import signature  # TODO: Imported, but not used; remove
 
 
-class PolymerAdsorptionError(BasicException):
+class AdsorptionError(BasicException):
     pass
 
 
-class PolymerAdsorption(Hybrid):
+class Adsorption(Hybrid):
     __slots__ = ["_substrate", "_minsep", "_vaccuum", "_side", "_top", "_bottom"]
     __MAXREPMISMATCH__ = 1000
     __MISMATCHTOLSTD__ = 5.0
@@ -38,7 +38,7 @@ class PolymerAdsorption(Hybrid):
 
         if isinstance(substrate, Slab):
             if substrate._belongs_to is not None:
-                raise PolymerAdsorptionError(
+                raise AdsorptionError(
                     "The substrate already belongs to another structure!"
                 )
 
@@ -53,18 +53,18 @@ class PolymerAdsorption(Hybrid):
             if isinstance(minsep, (int, float)) and minsep > 0.0:
                 self._minsep = minsep
             else:
-                raise PolymerAdsorptionError(
+                raise AdsorptionError(
                     "'minsep' must be a number greater than zero!"
                 )
 
             if isinstance(vaccuum, (int, float)) and vaccuum > 0.0:
                 self._vaccuum = vaccuum
             else:
-                raise PolymerAdsorptionError(
+                raise AdsorptionError(
                     "'vaccuum' must be a number greater than zero!"
                 )
         else:
-            raise PolymerAdsorptionError("Substrate must be a Slab object!")
+            raise AdsorptionError("Substrate must be a Slab object!")
 
         substrate._belongs_to = self
 
@@ -113,19 +113,19 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "The molecule already belongs to another structure!"
             )
         elif self._components["substrate"] is None:
-            raise PolymerAdsorptionError("No substrate has been defined!")
+            raise AdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
-            raise PolymerAdsorptionError("'anchor' must be a valid anchor point!")
+            raise AdsorptionError("'anchor' must be a valid anchor point!")
         elif n < 0:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "'n' must be an integer greater than or equal to zero!"
             )
         elif m < 0:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "'m' must be an integer greater than or equal to zero!"
             )
 
@@ -137,7 +137,7 @@ class PolymerAdsorption(Hybrid):
             elif side == "bottom":
                 dz = self._components["substrate"]._bottom - sep - molecule._maxz
             else:
-                raise PolymerAdsorptionError("'side' must be either 'top' or 'bottom'!")
+                raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
 
             self._components["molecules@" + side].append(molecule)
 
@@ -149,7 +149,7 @@ class PolymerAdsorption(Hybrid):
 
             molecule.move_to(x, anchor, **kwargs)
         else:
-            raise PolymerAdsorptionError("A valid adsorption site must be provided!")
+            raise AdsorptionError("A valid adsorption site must be provided!")
 
     # TODO: Verify if Align if not "Z". Throw error if it is.
     # TODO: Allow just one polymer. Make a separate dictionary.
@@ -186,11 +186,11 @@ class PolymerAdsorption(Hybrid):
             # TODO: All errors called inside a class must be ClassNameError()
             raise AssertionError("The polymer molecule is perpendicular to slab!")
         if polymer._belongs_to is not None:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "The polymer already belongs to another structure!"
             )
         elif self._components["substrate"] is None:
-            raise PolymerAdsorptionError("No substrate has been defined!")
+            raise AdsorptionError("No substrate has been defined!")
 
         sep = max([vertsep, self._minsep])
 
@@ -199,7 +199,7 @@ class PolymerAdsorption(Hybrid):
         elif side == "bottom":
             dz = self._components["substrate"]._bottom - sep - polymer._maxz
         else:
-            raise PolymerAdsorptionError("'side' must be either 'top' or 'bottom'!")
+            raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
 
         # This object just allow one polymer because of mismatch problems with the slab.
         # TODO: Rename; "polymer@top|bottom" is better than "polymer@top|bottom"
@@ -207,7 +207,7 @@ class PolymerAdsorption(Hybrid):
             len(self._components["polymer@top"]) > 0
             or len(self._components["polymer@bottom"]) > 0
         ):
-            raise PolymerAdsorptionError("The adsorbed already has a polymer!")
+            raise AdsorptionError("The adsorbed already has a polymer!")
 
         self._components["polymer@" + side].append(polymer)
 
@@ -249,13 +249,13 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if molecule._belongs_to is not None:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "The polymer already belongs to another structure!"
             )
         elif self._components["substrate"] is None:
-            raise PolymerAdsorptionError("No substrate has been defined!")
+            raise AdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in molecule.anchors.keys():
-            raise PolymerAdsorptionError("'anchor' must be a valid anchor point!")
+            raise AdsorptionError("'anchor' must be a valid anchor point!")
 
         if isinstance(pos, (list, tuple)):
             pos = array(pos)
@@ -268,7 +268,7 @@ class PolymerAdsorption(Hybrid):
             elif side == "bottom":
                 dz = self._components["substrate"]._bottom - sep - molecule._maxz
             else:
-                raise PolymerAdsorptionError("'side' must be either 'top' or 'bottom'!")
+                raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
 
             x = array([pos[0], pos[1], molecule.anchors[anchor][2] + dz])
 
@@ -278,7 +278,7 @@ class PolymerAdsorption(Hybrid):
 
             molecule.move_to(x, anchor, **kwargs)
         else:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "'pos' must be provided as a list with two components!"
             )
 
@@ -310,13 +310,13 @@ class PolymerAdsorption(Hybrid):
             "top" or "bottom" (self-explanatory). The default is "top".
         """
         if polymer._belongs_to is not None:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "The polymer already belongs to another structure!"
             )
         elif self._components["substrate"] is None:
-            raise PolymerAdsorptionError("No substrate has been defined!")
+            raise AdsorptionError("No substrate has been defined!")
         elif len(anchor) == 0 or anchor not in polymer.anchors.keys():
-            raise PolymerAdsorptionError("'anchor' must be a valid anchor point!")
+            raise AdsorptionError("'anchor' must be a valid anchor point!")
 
         if isinstance(pos, (list, tuple)):
             pos = array(pos)
@@ -329,7 +329,7 @@ class PolymerAdsorption(Hybrid):
             elif side == "bottom":
                 dz = self._components["substrate"]._bottom - sep - polymer._maxz
             else:
-                raise PolymerAdsorptionError("'side' must be either 'top' or 'bottom'!")
+                raise AdsorptionError("'side' must be either 'top' or 'bottom'!")
 
             x = array([pos[0], pos[1], polymer.anchors[anchor][2] + dz])
 
@@ -340,7 +340,7 @@ class PolymerAdsorption(Hybrid):
             polymer.move_to(x, anchor)
             self._update()
         else:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "'pos' must be provided as a list with two components!"
             )
 
@@ -359,7 +359,7 @@ class PolymerAdsorption(Hybrid):
         elif molecule in self._components["molecules@bottom"]:
             self._components["molecules@bottom"].remove(molecule)
         else:
-            raise PolymerAdsorptionError("Molecule not found!")
+            raise AdsorptionError("Molecule not found!")
 
         molecule._belongs_to = None
 
@@ -381,7 +381,7 @@ class PolymerAdsorption(Hybrid):
         elif polymer in self._components["molecules@bottom"]:
             self._components["molecules@bottom"].remove(polymer)
         else:
-            raise PolymerAdsorptionError("Polymer not found!")
+            raise AdsorptionError("Polymer not found!")
 
         polymer._belongs_to = None
 
@@ -406,7 +406,7 @@ class PolymerAdsorption(Hybrid):
 
                 break
         else:
-            raise PolymerAdsorptionError("Molecule ID not found!")
+            raise AdsorptionError("Molecule ID not found!")
 
         molecule._belongs_to = None
 
@@ -537,7 +537,7 @@ class PolymerAdsorption(Hybrid):
 
         """
         if sep < self._minsep:
-            raise PolymerAdsorptionError("Molecule will be too close to the substrate!")
+            raise AdsorptionError("Molecule will be too close to the substrate!")
 
         dz = 0.0
 
@@ -546,7 +546,7 @@ class PolymerAdsorption(Hybrid):
         elif molecule in self._components["molecules@bottom"]:
             dz = self._components["substrate"]._bottom - sep - molecule._maxz
         else:
-            raise PolymerAdsorptionError("Molecule not found!")
+            raise AdsorptionError("Molecule not found!")
 
         if abs(dz) > 0.0:
             molecule.displace(array([0.0, 0.0, dz]), call_handler=False, **kwargs)
@@ -575,7 +575,7 @@ class PolymerAdsorption(Hybrid):
         """
 
         if sep < self._minsep:
-            raise PolymerAdsorptionError("Polymer will be too close to the substrate!")
+            raise AdsorptionError("Polymer will be too close to the substrate!")
 
         dz = 0.0
 
@@ -585,7 +585,7 @@ class PolymerAdsorption(Hybrid):
         elif polymer in self._components["molecules@bottom"]:
             dz = self._components["substrate"]._bottom - sep - polymer._maxz
         else:
-            raise PolymerAdsorptionError("Molecule not found!")
+            raise AdsorptionError("Molecule not found!")
 
         if abs(dz) > 0.0:
             polymer.displace(array([0.0, 0.0, dz]))
@@ -605,7 +605,7 @@ class PolymerAdsorption(Hybrid):
             Nearest distance separating the molecule from the substrate.
         """
         if sep < self._minsep:
-            raise PolymerAdsorptionError("Molecule will be too close to the substrate!")
+            raise AdsorptionError("Molecule will be too close to the substrate!")
 
         for molecule in self.adsorbed_molecules:
             if molecule.ID == molid:
@@ -616,7 +616,7 @@ class PolymerAdsorption(Hybrid):
                 elif molecule in self._components["molecules@bottom"]:
                     dz = self._components["substrate"]._bottom - sep - molecule._maxz
                 else:
-                    raise PolymerAdsorptionError("Molecule not found!")
+                    raise AdsorptionError("Molecule not found!")
 
                 if abs(dz) > 0.0:
                     molecule.displace(
@@ -625,7 +625,7 @@ class PolymerAdsorption(Hybrid):
 
                 break
         else:
-            raise PolymerAdsorptionError("Molecule ID not found!")
+            raise AdsorptionError("Molecule ID not found!")
 
     # endregion
 
@@ -647,7 +647,7 @@ class PolymerAdsorption(Hybrid):
         if isinstance(obj, Polymer):
             if method.__name__ == "align":
                 if method_locals["axis"] == "z":
-                    raise PolymerAdsorptionError("Cant align to z!")
+                    raise AdsorptionError("Cant align to z!")
                 obj.resize(0)
 
     def endHandler(self, obj, method, method_locals, **kwargs):
@@ -832,7 +832,7 @@ class PolymerAdsorption(Hybrid):
 
             self._update()
         else:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "Minimum separation must be a number greater than zero!"
             )
 
@@ -848,7 +848,7 @@ class PolymerAdsorption(Hybrid):
                 [0.0, 0.0, (self._top - self._bottom + val) / self._a0]
             )
         else:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "Vaccuum must be provided as a number greater than zero!"
             )
 
@@ -891,6 +891,6 @@ class PolymerAdsorption(Hybrid):
 
             self._update()
         else:
-            raise PolymerAdsorptionError(
+            raise AdsorptionError(
                 "The new origin must be a Numpy array with three components!"
             )
