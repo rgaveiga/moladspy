@@ -1,3 +1,7 @@
-from .core import Atom,Molecule,Slab,Adsorption
+from .atom import Atom
+from .molecule import Molecule
+from .slab import Slab
+from .polymer import Polymer
+from .adsorption import Adsorption
 
-__version__="1.0.0"
+__version__ = "0.9.1"
